@@ -54,7 +54,7 @@ contract POAS is ERC20, AccessControl {
     }
 
     // Not initalize contract in constructor, as we adapt Upgradable proxy
-    constructor() ERC20("pOAS", "POAS") {}
+    constructor() ERC20(name(), symbol()) {}
 
     // Initalize via proxy
     function init(address admin, address manager) public {
