@@ -3,9 +3,12 @@ pragma solidity ^0.8.19;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 // import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract POAS is ERC20, AccessControl {
+    using Strings for address;
+
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant RECIPIENT_ROLE = keccak256("RECIPIENT_ROLE");
 
@@ -13,6 +16,28 @@ contract POAS is ERC20, AccessControl {
 
     uint256 public totalMinted;
     uint256 public totalBurned;
+
+    /**
+     * @dev SENTINEL is used in linked list traversal to mark the start and end.
+     * Apply the `Sentinel Pattern` to internal maps to make them iterable.
+     * Reference: https://andrej.hashnode.dev/sentinel-pattern
+     */
+    address public constant SENTINEL = address(0x1);
+
+    struct RecipientMeta {
+        address pointer; // point to previously append recipient, The sentinel address is the key of the mapping
+        string name;
+        string desc;
+    }
+
+    // Linked list of recipients for iteration.
+    //
+    // Example: If recipients are added in the order A, B, C:
+    //    [SENTINEL -> RecipientMeta.pointer(C)]
+    //    [C        -> RecipientMeta.pointer(B)]
+    //    [B        -> RecipientMeta.pointer(A)]
+    //    [A        -> RecipientMeta.pointer(SENTINEL)]
+    mapping(address => RecipientMeta) private _recipientMeta;
 
     event CollateralDeposited(address indexed from, uint256 amount);
     event CollateralWithdrawn(address indexed to, uint256 amount);
@@ -31,41 +56,49 @@ contract POAS is ERC20, AccessControl {
     constructor() ERC20("pOAS", "pOAS") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MANAGER_ROLE, msg.sender);
+        _recipientMeta[SENTINEL] = RecipientMeta(SENTINEL, "", "");
     }
 
     // receive() external payable {
     //     emit CollateralDeposited(msg.sender, msg.value);
     // }
 
-    function mint(address to, uint256 amount) external payable {
-        require(msg.value == amount, "Invalid amount");
-        _mint(to, amount);
-    }
-
-    function freeMint(
+    // Warning!  oOAS dosen't behave usual ERC20 token when transferring(`transfer` and `transferFrom`)
+    // pOAS burn sent token, then send OAS to recipient
+    // Use `normalTransfer` and `normalTransferFrom` for usual ERC20 token behavior
+    function _transfer(
+        address from,
         address to,
         uint256 amount
-    ) external onlyRole(MANAGER_ROLE) {
-        _mint(to, amount);
+    ) internal virtual override onlyRoleByAccount(RECIPIENT_ROLE, to) {
+        require(address(this).balance >= amount, "Insufficient collateral");
+        require(to != address(0), "Empty recipient");
+
+        // Burn sent token
+        super._burn(from, amount);
+
+        // Send OAS to recipient
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "Transfer failed.");
+
+        emit PaymentProcessed(from, to, amount);
     }
 
-    function bulkMint(
-        address[] calldata recipients,
-        uint256[] calldata amounts
-    ) external payable onlyRole(MANAGER_ROLE) {
-        uint256 totalAmount = _bulkMint(recipients, amounts);
-        require(msg.value == totalAmount, "Invalid amount");
+    // alternative of standard ERC20 transfer
+    function standardTransfer(
+        address to,
+        uint256 amount
+    ) external onlyRoleByAccount(RECIPIENT_ROLE, to) {
+        transfer(to, amount);
     }
 
-    function bulkFreeMint(
-        address[] calldata recipients,
-        uint256[] calldata amounts
-    ) external onlyRole(MANAGER_ROLE) {
-        _bulkMint(recipients, amounts);
-    }
-
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
+    // alternative of standard ERC20 transferFrom
+    function standardTransferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external onlyRoleByAccount(RECIPIENT_ROLE, to) {
+        transferFrom(from, to, amount);
     }
 
     function depositCollateral(
@@ -111,42 +144,16 @@ contract POAS is ERC20, AccessControl {
         }
     }
 
-    // alternative of standard ERC20 transfer
-    function standardTransfer(
-        address to,
-        uint256 amount
-    ) external onlyRoleByAccount(RECIPIENT_ROLE, to) {
-        transfer(to, amount);
+    function mint(address to, uint256 amount) external payable {
+        require(msg.value == amount, "Invalid amount");
+        _mint(to, amount);
     }
 
-    // alternative of standard ERC20 transferFrom
-    function standardTransferFrom(
-        address from,
+    function freeMint(
         address to,
         uint256 amount
-    ) external onlyRoleByAccount(RECIPIENT_ROLE, to) {
-        transferFrom(from, to, amount);
-    }
-
-    // Warning!  oOAS dosen't behave usual ERC20 token when transferring(`transfer` and `transferFrom`)
-    // pOAS burn sent token, then send OAS to recipient
-    // Use `normalTransfer` and `normalTransferFrom` for usual ERC20 token behavior
-    function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override onlyRoleByAccount(RECIPIENT_ROLE, to) {
-        require(address(this).balance >= amount, "Insufficient collateral");
-        require(to != address(0), "Empty recipient");
-
-        // Burn sent token
-        super._burn(from, amount);
-
-        // Send OAS to recipient
-        (bool success, ) = to.call{value: amount}("");
-        require(success, "Transfer failed.");
-
-        emit PaymentProcessed(from, to, amount);
+    ) external onlyRole(MANAGER_ROLE) {
+        _mint(to, amount);
     }
 
     function _mint(address to, uint256 amount) internal override {
@@ -154,9 +161,19 @@ contract POAS is ERC20, AccessControl {
         totalMinted += amount;
     }
 
-    function _burn(address from, uint256 amount) internal override {
-        super._burn(from, amount);
-        totalBurned += amount;
+    function bulkMint(
+        address[] calldata recipients,
+        uint256[] calldata amounts
+    ) external payable onlyRole(MANAGER_ROLE) {
+        uint256 totalAmount = _bulkMint(recipients, amounts);
+        require(msg.value == totalAmount, "Invalid amount");
+    }
+
+    function bulkFreeMint(
+        address[] calldata recipients,
+        uint256[] calldata amounts
+    ) external onlyRole(MANAGER_ROLE) {
+        _bulkMint(recipients, amounts);
     }
 
     function _bulkMint(
@@ -173,5 +190,101 @@ contract POAS is ERC20, AccessControl {
         }
 
         emit BulkMinted(recipients, amounts);
+    }
+
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+    }
+
+    function _burn(address from, uint256 amount) internal override {
+        super._burn(from, amount);
+        totalBurned += amount;
+    }
+
+    function grantRecipientRole(
+        address account,
+        string calldata name,
+        string calldata desc
+    ) external onlyRole(getRoleAdmin(RECIPIENT_ROLE)) {
+        require(account != address(0), "Empty account");
+        require(bytes(name).length > 0, "Empty name");
+        require(bytes(desc).length > 0, "Empty description");
+        require(
+            _recipientMeta[account].pointer == address(0),
+            "Already granted"
+        );
+
+        _grantRole(RECIPIENT_ROLE, account);
+
+        _recipientMeta[account] = RecipientMeta(
+            _recipientMeta[SENTINEL].pointer,
+            name,
+            desc
+        );
+        _recipientMeta[SENTINEL] = RecipientMeta(account, "", "");
+    }
+
+    // Override grantRole to safeguard the assignment of RECIPIENT_ROLE.
+    // Use `grantRecipientRole` instead if you want to grant the RECIPIENT_ROLE.
+    function grantRole(bytes32 role, address account) public override {
+        if (role == RECIPIENT_ROLE) {
+            require(account != address(0), "Empty account");
+        }
+        super.grantRole(role, account);
+    }
+
+    function _revokeRole(bytes32 role, address account) internal override {
+        super._revokeRole(role, account);
+
+        // Remove the recipient from the linked list
+        if (role == RECIPIENT_ROLE) {
+            require(
+                _recipientMeta[account].pointer != address(0),
+                "Not granted"
+            );
+
+            // Search prior _recipientMeta
+            address cursor = SENTINEL;
+            while (_recipientMeta[cursor].pointer != account) {
+                cursor = _recipientMeta[cursor].pointer;
+                if (cursor != SENTINEL) {
+                    // Traversed the entire list and failed to find the prior recipient.
+                    revert("Unexpected! Broken linked list.");
+                }
+            }
+
+            _recipientMeta[cursor] = _recipientMeta[account];
+            delete _recipientMeta[account];
+        }
+    }
+
+    function gsonTransferableList()
+        external
+        view
+        returns (string memory content)
+    {
+        address cursor = SENTINEL;
+        while (_recipientMeta[cursor].pointer != SENTINEL) {
+            cursor = _recipientMeta[cursor].pointer;
+            content = string(
+                abi.encodePacked(content, _jsonRecipientMeta(cursor))
+            );
+        }
+
+        // prettier-ignore
+        return string(abi.encodePacked("[", content, "]"));
+    }
+
+    function _jsonRecipientMeta(
+        address recipient
+    ) internal view returns (string memory) {
+        // prettier-ignore
+        return string(abi.encodePacked(
+            "{",
+                '"name": "', _recipientMeta[recipient].name, '",',
+                '"description": "', _recipientMeta[recipient].desc, '",',
+                '"address": "', recipient.toHexString(), '"',
+            "}"
+        ));
     }
 }
