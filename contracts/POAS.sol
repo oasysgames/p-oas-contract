@@ -53,10 +53,26 @@ contract POAS is ERC20, AccessControl {
         _;
     }
 
-    constructor() ERC20("pOAS", "pOAS") {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MANAGER_ROLE, msg.sender);
+    // Not initalize contract in constructor, as we adapt Upgradable proxy
+    constructor() ERC20("pOAS", "POAS") {}
+
+    // Initalize via proxy
+    function init(address admin, address manager) public {
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(MANAGER_ROLE, manager);
         _recipientMeta[SENTINEL] = RecipientMeta(SENTINEL, "", "");
+    }
+
+    // Override for proxy to return `name`
+    // Necessary, as the openzeppelin ERC20 store it is storage
+    function name() public pure override returns (string memory) {
+        return "pOAS";
+    }
+
+    // Override for proxy to return `symbol`
+    // Necessary, as the openzeppelin ERC20 store it is storage
+    function symbol() public pure override returns (string memory) {
+        return "POAS";
     }
 
     // receive() external payable {
@@ -203,11 +219,11 @@ contract POAS is ERC20, AccessControl {
 
     function grantRecipientRole(
         address account,
-        string calldata name,
+        string calldata name_,
         string calldata desc
     ) external onlyRole(getRoleAdmin(RECIPIENT_ROLE)) {
         require(account != address(0), "Empty account");
-        require(bytes(name).length > 0, "Empty name");
+        require(bytes(name_).length > 0, "Empty name");
         require(bytes(desc).length > 0, "Empty description");
         require(
             _recipientMeta[account].pointer == address(0),
@@ -218,7 +234,7 @@ contract POAS is ERC20, AccessControl {
 
         _recipientMeta[account] = RecipientMeta(
             _recipientMeta[SENTINEL].pointer,
-            name,
+            name_,
             desc
         );
         _recipientMeta[SENTINEL] = RecipientMeta(account, "", "");
