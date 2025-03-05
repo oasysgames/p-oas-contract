@@ -19,7 +19,10 @@ describe('PaymentSample', function () {
     paymentSample = await PaymentSample.deploy(await poas.getAddress())
 
     // PaymentSampleコントラクトにPAYMENT_ROLEを付与
-    await poas.grantRole(await poas.PAYMENT_ROLE(), await paymentSample.getAddress())
+    await poas.grantRole(
+      await poas.PAYMENT_ROLE(),
+      await paymentSample.getAddress(),
+    )
 
     // ユーザーにpOASを発行
     await poas.mint(user.address, ethers.parseEther('1000'))
@@ -39,7 +42,9 @@ describe('PaymentSample', function () {
         .to.emit(paymentSample, 'PaymentReceived')
         .withArgs(user.address, amount)
 
-      expect(await ethers.provider.getBalance(await paymentSample.getAddress())).to.equal(amount)
+      expect(
+        await ethers.provider.getBalance(await paymentSample.getAddress()),
+      ).to.equal(amount)
     })
 
     it('should fail payment without approval', async function () {
@@ -67,7 +72,9 @@ describe('PaymentSample', function () {
 
     it('should fail withdrawal if insufficient balance', async function () {
       const amount = ethers.parseEther('100')
-      await expect(paymentSample.connect(owner).withdrawOAS(amount)).to.be.revertedWith('Insufficient balance')
+      await expect(
+        paymentSample.connect(owner).withdrawOAS(amount),
+      ).to.be.revertedWith('Insufficient balance')
     })
   })
 })

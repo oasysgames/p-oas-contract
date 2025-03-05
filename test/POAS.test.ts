@@ -39,9 +39,9 @@ describe('POAS', function () {
     it('should fail transfer to non-payment address', async function () {
       const amount = ethers.parseEther('100')
       await poas.connect(minter).mint(user.address, amount)
-      await expect(poas.connect(user).transfer(owner.address, amount)).to.be.revertedWith(
-        'Recipient must have PAYMENT_ROLE',
-      )
+      await expect(
+        poas.connect(user).transfer(owner.address, amount),
+      ).to.be.revertedWith('Recipient must have PAYMENT_ROLE')
     })
 
     it('should bulk mint tokens correctly', async function () {
@@ -60,16 +60,18 @@ describe('POAS', function () {
       const recipients = [user.address, paymentReceiver.address]
       const amounts = [ethers.parseEther('100')]
 
-      await expect(poas.connect(minter).bulkMint(recipients, amounts)).to.be.revertedWith('Arrays length mismatch')
+      await expect(
+        poas.connect(minter).bulkMint(recipients, amounts),
+      ).to.be.revertedWith('Arrays length mismatch')
     })
 
     it('should fail bulk mint with zero amount', async function () {
       const recipients = [user.address]
       const amounts = [0]
 
-      await expect(poas.connect(minter).bulkMint(recipients, amounts)).to.be.revertedWith(
-        'Amount must be greater than 0',
-      )
+      await expect(
+        poas.connect(minter).bulkMint(recipients, amounts),
+      ).to.be.revertedWith('Amount must be greater than 0')
     })
   })
 
@@ -88,9 +90,9 @@ describe('POAS', function () {
       const amount = ethers.parseEther('100')
       await poas.connect(minter).mint(user.address, amount)
 
-      await expect(poas.connect(user).transfer(paymentReceiver.address, amount)).to.be.revertedWith(
-        'Insufficient collateral',
-      )
+      await expect(
+        poas.connect(user).transfer(paymentReceiver.address, amount),
+      ).to.be.revertedWith('Insufficient collateral')
     })
   })
 
@@ -101,9 +103,13 @@ describe('POAS', function () {
       })
 
       await claimSample.connect(user).claim()
-      expect(await poas.balanceOf(user.address)).to.equal(ethers.parseEther('100'))
+      expect(await poas.balanceOf(user.address)).to.equal(
+        ethers.parseEther('100'),
+      )
 
-      await expect(claimSample.connect(user).claim()).to.be.revertedWith('Already claimed')
+      await expect(claimSample.connect(user).claim()).to.be.revertedWith(
+        'Already claimed',
+      )
     })
   })
 })

@@ -19,7 +19,10 @@ contract ClaimSample is Ownable {
         require(!hasClaimed[msg.sender], "Already claimed");
         hasClaimed[msg.sender] = true;
 
-        require(poas.hasRole(poas.MINTER_ROLE(), address(this)), "Contract needs MINTER_ROLE");
+        require(
+            poas.hasRole(poas.MINTER_ROLE(), address(this)),
+            "Contract needs MINTER_ROLE"
+        );
 
         poas.mint(msg.sender, CLAIM_AMOUNT);
         emit Claimed(msg.sender, CLAIM_AMOUNT);

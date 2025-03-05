@@ -13,13 +13,19 @@ contract PaymentSample is Ownable {
     constructor(address poasAddress) Ownable(msg.sender) {
         poas = POAS(poasAddress);
         // コントラクトデプロイ時にPAYMENT_ROLEを取得する必要がある
-        require(poas.hasRole(poas.PAYMENT_ROLE(), address(this)), "Contract needs PAYMENT_ROLE");
+        require(
+            poas.hasRole(poas.PAYMENT_ROLE(), address(this)),
+            "Contract needs PAYMENT_ROLE"
+        );
     }
 
     // pOASでの支払いを受け付ける
     function pay(uint256 amount) external {
         // 送信者からpOASを受け取る（事前にapproveが必要）
-        require(poas.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+        require(
+            poas.transferFrom(msg.sender, address(this), amount),
+            "Transfer failed"
+        );
         emit PaymentReceived(msg.sender, amount);
     }
 
