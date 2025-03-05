@@ -3,6 +3,7 @@
   "rules": {
     "compiler-version": ["error", "^0.8.19"],
     "func-visibility": ["warn", {"ignoreConstructors": true}],
+    "quotes": "off",
     "gas-custom-errors": "off"
   }
 }
