@@ -3,10 +3,11 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@typechain/hardhat";
 import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomiclabs/hardhat-solhint";
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.20",
+    version: "0.8.19",
     settings: {
       optimizer: {
         enabled: true,
@@ -22,4 +23,4 @@ const config: HardhatUserConfig = {
   },
 };
 
-export default config; 
+export default config;

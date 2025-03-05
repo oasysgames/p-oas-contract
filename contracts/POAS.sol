@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -42,17 +42,10 @@ contract POAS is ERC20, AccessControl, ReentrancyGuard {
         return (address(this).balance * 1e18) / totalSupply;
     }
 
-    function _update(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override {
+    function _update(address from, address to, uint256 amount) internal virtual override {
         if (from != address(0) && to != address(0)) {
             if (hasRole(PAYMENT_ROLE, to)) {
-                require(
-                    address(this).balance >= amount,
-                    "Insufficient collateral"
-                );
+                require(address(this).balance >= amount, "Insufficient collateral");
                 super._update(from, address(0), amount); // burn
                 (bool success, ) = to.call{value: amount}("");
                 require(success, "Transfer failed");
@@ -86,4 +79,4 @@ contract POAS is ERC20, AccessControl, ReentrancyGuard {
     receive() external payable {
         emit CollateralDeposited(msg.sender, msg.value);
     }
-} 
+}
