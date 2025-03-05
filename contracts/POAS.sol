@@ -17,6 +17,8 @@ contract POAS is ERC20, AccessControl {
     uint256 public totalMinted;
     uint256 public totalBurned;
 
+    bool public initalized;
+
     /**
      * @dev SENTINEL is used in linked list traversal to mark the start and end.
      * Apply the `Sentinel Pattern` to internal maps to make them iterable.
@@ -58,6 +60,9 @@ contract POAS is ERC20, AccessControl {
 
     // Initalize via proxy
     function init(address admin, address manager) public {
+        require(!initalized, "Already initalized");
+        initalized = true;
+
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(MANAGER_ROLE, manager);
         _recipientMeta[SENTINEL] = RecipientMeta(SENTINEL, "", "");
