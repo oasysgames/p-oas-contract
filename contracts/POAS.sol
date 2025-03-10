@@ -80,6 +80,7 @@ contract POAS is ERC20, AccessControl {
         return "POAS";
     }
 
+    // NOTE: disable direct deposit, need to confirm with Manzoku-san
     // receive() external payable {
     //     emit CollateralDeposited(msg.sender, msg.value);
     // }
@@ -134,7 +135,7 @@ contract POAS is ERC20, AccessControl {
         address to,
         uint256 amount
     ) external onlyRole(MANAGER_ROLE) {
-        // what means?
+        // what means?, need to confirm with Manzoku-san
         // require(getCollateralRatio() >= 1e18, "Insufficient collateral ratio");
 
         require(to != address(0), "Empty recipient");
@@ -158,7 +159,7 @@ contract POAS is ERC20, AccessControl {
         overCollateralized = balance >= totalSupply;
 
         if (totalSupply == 0) {
-            // why?
+            // why?, need to confirm with Manzoku-san
             ratio = type(uint256).max;
         } else {
             ratio = balance / totalSupply;
