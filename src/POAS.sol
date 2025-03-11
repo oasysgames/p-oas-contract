@@ -85,27 +85,6 @@ contract POAS is ERC20, AccessControl {
     //     emit CollateralDeposited(msg.sender, msg.value);
     // }
 
-    // Warning!  oOAS dosen't behave usual ERC20 token when transferring(`transfer` and `transferFrom`)
-    // pOAS burn sent token, then send OAS to recipient
-    // Use `normalTransfer` and `normalTransferFrom` for usual ERC20 token behavior
-    function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override onlyRoleByAccount(RECIPIENT_ROLE, to) {
-        require(address(this).balance >= amount, "Insufficient collateral");
-        require(to != address(0), "Empty recipient");
-
-        // Burn sent token
-        super._burn(from, amount);
-
-        // Send OAS to recipient
-        (bool success, ) = to.call{value: amount}("");
-        require(success, "Transfer failed.");
-
-        emit PaymentProcessed(from, to, amount);
-    }
-
     // alternative of standard ERC20 transfer
     function standardTransfer(
         address to,
@@ -178,11 +157,6 @@ contract POAS is ERC20, AccessControl {
         _mint(to, amount);
     }
 
-    function _mint(address to, uint256 amount) internal override {
-        super._mint(to, amount);
-        totalMinted += amount;
-    }
-
     function bulkMint(
         address[] calldata recipients,
         uint256[] calldata amounts
@@ -218,11 +192,6 @@ contract POAS is ERC20, AccessControl {
         _burn(msg.sender, amount);
     }
 
-    function _burn(address from, uint256 amount) internal override {
-        super._burn(from, amount);
-        totalBurned += amount;
-    }
-
     function grantRecipientRole(
         address account,
         string calldata name_,
@@ -244,40 +213,6 @@ contract POAS is ERC20, AccessControl {
             desc
         );
         _recipientMeta[SENTINEL] = RecipientMeta(account, "", "");
-    }
-
-    // Override grantRole to safeguard the assignment of RECIPIENT_ROLE.
-    // Use `grantRecipientRole` instead if you want to grant the RECIPIENT_ROLE.
-    function grantRole(bytes32 role, address account) public override {
-        if (role == RECIPIENT_ROLE) {
-            require(account != address(0), "Empty account");
-        }
-        super.grantRole(role, account);
-    }
-
-    function _revokeRole(bytes32 role, address account) internal override {
-        super._revokeRole(role, account);
-
-        // Remove the recipient from the linked list
-        if (role == RECIPIENT_ROLE) {
-            require(
-                _recipientMeta[account].pointer != address(0),
-                "Not granted"
-            );
-
-            // Search prior _recipientMeta
-            address cursor = SENTINEL;
-            while (_recipientMeta[cursor].pointer != account) {
-                cursor = _recipientMeta[cursor].pointer;
-                if (cursor != SENTINEL) {
-                    // Traversed the entire list and failed to find the prior recipient.
-                    revert("Unexpected! Broken linked list.");
-                }
-            }
-
-            _recipientMeta[cursor] = _recipientMeta[account];
-            delete _recipientMeta[account];
-        }
     }
 
     function gsonTransferableList()

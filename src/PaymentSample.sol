@@ -12,10 +12,10 @@ contract PaymentSample is Ownable {
 
     constructor(address poasAddress) Ownable(msg.sender) {
         poas = POAS(poasAddress);
-        // コントラクトデプロイ時にPAYMENT_ROLEを取得する必要がある
+        // コントラクトデプロイ時にRECIPIENT_ROLEを取得する必要がある
         require(
-            poas.hasRole(poas.PAYMENT_ROLE(), address(this)),
-            "Contract needs PAYMENT_ROLE"
+            poas.hasRole(poas.RECIPIENT_ROLE(), address(this)),
+            "Contract needs RECIPIENT_ROLE"
         );
     }
 
