@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {AccessControlEnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -22,7 +21,6 @@ import {IPOAS} from "./interfaces/IPOAS.sol";
  * - Recipient management
  */
 contract POAS is
-    Initializable,
     ReentrancyGuardUpgradeable,
     AccessControlEnumerableUpgradeable,
     ERC20BurnableUpgradeable,
