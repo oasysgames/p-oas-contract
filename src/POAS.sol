@@ -327,7 +327,41 @@ contract POAS is
     /**
      * @inheritdoc IPOAS
      */
-    function getRecipients(
+    function getRecipients()
+        public
+        view
+        virtual
+        returns (
+            address[] memory recipients,
+            string[] memory names,
+            string[] memory descriptions
+        )
+    {
+        (recipients, names, descriptions, ) = getRecipientsPaginated(
+            0,
+            getRoleMemberCount(RECIPIENT_ROLE)
+        );
+    }
+
+    /**
+     * @inheritdoc IPOAS
+     */
+    function getRecipientsJSON()
+        public
+        view
+        virtual
+        returns (string memory json)
+    {
+        (json, ) = getRecipientsJSONPaginated(
+            0,
+            getRoleMemberCount(RECIPIENT_ROLE)
+        );
+    }
+
+    /**
+     * @inheritdoc IPOAS
+     */
+    function getRecipientsPaginated(
         uint256 cursor,
         uint256 size
     )
@@ -366,7 +400,7 @@ contract POAS is
     /**
      * @inheritdoc IPOAS
      */
-    function getRecipientsJSON(
+    function getRecipientsJSONPaginated(
         uint256 cursor,
         uint256 size
     ) public view virtual returns (string memory json, uint256 nextCursor) {
@@ -375,7 +409,7 @@ contract POAS is
             string[] memory names,
             string[] memory descriptions,
             uint256 newCursor
-        ) = getRecipients(cursor, size);
+        ) = getRecipientsPaginated(cursor, size);
         nextCursor = newCursor;
 
         uint256 length = recipients.length;

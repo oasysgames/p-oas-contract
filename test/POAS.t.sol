@@ -594,122 +594,22 @@ contract POASTest is Test {
             additionalRecipientNames,
             additionalRecipientNames
         );
-
-        uint256 nextCursor;
-        uint256 size;
-        address[] memory fetchedRecipients;
-        string[] memory fetchedNames;
-        string[] memory fetchedDescriptions;
-
-        // If size is larger than the number of registered recipients, all are retrieved at once
-        size = 100;
-        (
-            fetchedRecipients,
-            fetchedNames,
-            fetchedDescriptions,
-            nextCursor
-        ) = poas.getRecipients(nextCursor, size);
-        assertEq(fetchedRecipients.length, 52);
-        assertEq(fetchedRecipients[0], recipient1);
-        assertEq(fetchedRecipients[51], additionalRecipientAddrs[49]);
-        assertEq(fetchedNames.length, 52);
-        assertEq(fetchedNames[0], "Recipient 1");
-        assertEq(fetchedNames[51], "Additional Recipient 49");
-        assertEq(fetchedDescriptions.length, 52);
-        assertEq(fetchedDescriptions[0], "First recipient");
-        assertEq(fetchedDescriptions[51], "Additional Recipient 49");
-        assertEq(nextCursor, 52);
-
-        // Pagination (first page)
-        nextCursor = 0;
-        size = 25;
-        (
-            fetchedRecipients,
-            fetchedNames,
-            fetchedDescriptions,
-            nextCursor
-        ) = poas.getRecipients(nextCursor, size);
-        assertEq(fetchedRecipients.length, size);
-        assertEq(fetchedRecipients[0], recipient1);
-        assertEq(fetchedRecipients[24], additionalRecipientAddrs[22]);
-        assertEq(fetchedNames.length, size);
-        assertEq(fetchedNames[0], "Recipient 1");
-        assertEq(fetchedNames[24], "Additional Recipient 22");
-        assertEq(fetchedDescriptions.length, size);
-        assertEq(fetchedDescriptions[0], "First recipient");
-        assertEq(fetchedDescriptions[24], "Additional Recipient 22");
-        assertEq(nextCursor, 25);
-
-        // Pagination (second page)
-        (
-            fetchedRecipients,
-            fetchedNames,
-            fetchedDescriptions,
-            nextCursor
-        ) = poas.getRecipients(nextCursor, size);
-        assertEq(fetchedRecipients.length, size);
-        assertEq(fetchedRecipients[0], additionalRecipientAddrs[23]);
-        assertEq(fetchedRecipients[24], additionalRecipientAddrs[47]);
-        assertEq(fetchedNames.length, size);
-        assertEq(fetchedNames[0], "Additional Recipient 23");
-        assertEq(fetchedNames[24], "Additional Recipient 47");
-        assertEq(fetchedDescriptions.length, size);
-        assertEq(fetchedDescriptions[0], "Additional Recipient 23");
-        assertEq(fetchedDescriptions[24], "Additional Recipient 47");
-        assertEq(nextCursor, 50);
-
-        // Pagination (third page)
-        (
-            fetchedRecipients,
-            fetchedNames,
-            fetchedDescriptions,
-            nextCursor
-        ) = poas.getRecipients(nextCursor, size);
-        assertEq(fetchedRecipients.length, 2);
-        assertEq(fetchedRecipients[0], additionalRecipientAddrs[48]);
-        assertEq(fetchedRecipients[1], additionalRecipientAddrs[49]);
-        assertEq(fetchedNames.length, 2);
-        assertEq(fetchedNames[0], "Additional Recipient 48");
-        assertEq(fetchedNames[1], "Additional Recipient 49");
-        assertEq(fetchedDescriptions.length, 2);
-        assertEq(fetchedDescriptions[0], "Additional Recipient 48");
-        assertEq(fetchedDescriptions[1], "Additional Recipient 49");
-        assertEq(nextCursor, 52);
-
-        // After retrieving all entries, empty arrays are returned
-        (
-            fetchedRecipients,
-            fetchedNames,
-            fetchedDescriptions,
-            nextCursor
-        ) = poas.getRecipients(nextCursor, size);
-        assertEq(fetchedRecipients.length, 0);
-        assertEq(fetchedNames.length, 0);
-        assertEq(fetchedDescriptions.length, 0);
-        assertEq(nextCursor, 52);
-
-        // If cursor is out of range, empty arrays are returned
-        (fetchedRecipients, , , nextCursor) = poas.getRecipients(
-            nextCursor + 100,
-            size
-        );
-        assertEq(fetchedRecipients.length, 0);
-        assertEq(nextCursor, 52);
-
-        // Check that removing Recipients doesn't leave gaps
-        address[] memory recipientsToRemove = new address[](1);
-        recipientsToRemove[0] = additionalRecipientAddrs[0];
-        poas.removeRecipients(recipientsToRemove);
-
-        (fetchedRecipients, , , ) = poas.getRecipients(0, 100);
-        assertEq(fetchedRecipients.length, 51);
-        assertEq(fetchedRecipients[0], recipient1);
-        assertEq(fetchedRecipients[1], recipient2);
-        assertEq(fetchedRecipients[2], additionalRecipientAddrs[49]);
-        assertEq(fetchedRecipients[3], additionalRecipientAddrs[1]);
-        assertEq(fetchedRecipients[50], additionalRecipientAddrs[48]);
-
         vm.stopPrank();
+
+        (
+            address[] memory recipients,
+            string[] memory names,
+            string[] memory descriptions
+        ) = poas.getRecipients();
+        assertEq(recipients.length, 52);
+        assertEq(recipients[0], recipient1);
+        assertEq(recipients[51], additionalRecipientAddrs[49]);
+        assertEq(names.length, 52);
+        assertEq(names[0], "Recipient 1");
+        assertEq(names[51], "Additional Recipient 49");
+        assertEq(descriptions.length, 52);
+        assertEq(descriptions[0], "First recipient");
+        assertEq(descriptions[51], "Additional Recipient 49");
     }
 
     /**
@@ -729,11 +629,178 @@ contract POASTest is Test {
             additionalRecipientNames,
             additionalRecipientNames
         );
+        vm.stopPrank();
 
-        (string memory json, uint256 nextCursor) = poas.getRecipientsJSON(
-            0,
-            100
+        string memory json = poas.getRecipientsJSON();
+        assertEq(json.readAddress("$.[0].address"), recipient1);
+        assertEq(
+            json.readAddress("$.[51].address"),
+            additionalRecipientAddrs[49]
         );
+        assertEq(json.readString("$.[0].name"), "Recipient 1");
+        assertEq(json.readString("$.[51].name"), "Additional Recipient 49");
+        assertEq(json.readString("$.[0].description"), "First recipient");
+        assertEq(
+            json.readString("$.[51].description"),
+            "Additional Recipient 49"
+        );
+    }
+
+    /**
+     * @dev Test retrieving the list of Recipients with pagination
+     */
+    function test_getRecipientsPaginated() public {
+        vm.startPrank(operator);
+        poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
+
+        // Add 50 additional Recipients
+        (
+            address[] memory additionalRecipientAddrs,
+            string[] memory additionalRecipientNames
+        ) = _makeRecipients(50);
+        poas.addRecipients(
+            additionalRecipientAddrs,
+            additionalRecipientNames,
+            additionalRecipientNames
+        );
+
+        uint256 nextCursor;
+        uint256 size;
+        address[] memory fetchedRecipients;
+        string[] memory fetchedNames;
+        string[] memory fetchedDescriptions;
+
+        // If size is larger than the number of registered recipients, all are retrieved at once
+        size = 100;
+        (
+            fetchedRecipients,
+            fetchedNames,
+            fetchedDescriptions,
+            nextCursor
+        ) = poas.getRecipientsPaginated(nextCursor, size);
+        assertEq(fetchedRecipients.length, 52);
+        assertEq(fetchedRecipients[0], recipient1);
+        assertEq(fetchedRecipients[51], additionalRecipientAddrs[49]);
+        assertEq(fetchedNames.length, 52);
+        assertEq(fetchedNames[0], "Recipient 1");
+        assertEq(fetchedNames[51], "Additional Recipient 49");
+        assertEq(fetchedDescriptions.length, 52);
+        assertEq(fetchedDescriptions[0], "First recipient");
+        assertEq(fetchedDescriptions[51], "Additional Recipient 49");
+        assertEq(nextCursor, 52);
+
+        // Pagination (first page)
+        nextCursor = 0;
+        size = 25;
+        (
+            fetchedRecipients,
+            fetchedNames,
+            fetchedDescriptions,
+            nextCursor
+        ) = poas.getRecipientsPaginated(nextCursor, size);
+        assertEq(fetchedRecipients.length, size);
+        assertEq(fetchedRecipients[0], recipient1);
+        assertEq(fetchedRecipients[24], additionalRecipientAddrs[22]);
+        assertEq(fetchedNames.length, size);
+        assertEq(fetchedNames[0], "Recipient 1");
+        assertEq(fetchedNames[24], "Additional Recipient 22");
+        assertEq(fetchedDescriptions.length, size);
+        assertEq(fetchedDescriptions[0], "First recipient");
+        assertEq(fetchedDescriptions[24], "Additional Recipient 22");
+        assertEq(nextCursor, 25);
+
+        // Pagination (second page)
+        (
+            fetchedRecipients,
+            fetchedNames,
+            fetchedDescriptions,
+            nextCursor
+        ) = poas.getRecipientsPaginated(nextCursor, size);
+        assertEq(fetchedRecipients.length, size);
+        assertEq(fetchedRecipients[0], additionalRecipientAddrs[23]);
+        assertEq(fetchedRecipients[24], additionalRecipientAddrs[47]);
+        assertEq(fetchedNames.length, size);
+        assertEq(fetchedNames[0], "Additional Recipient 23");
+        assertEq(fetchedNames[24], "Additional Recipient 47");
+        assertEq(fetchedDescriptions.length, size);
+        assertEq(fetchedDescriptions[0], "Additional Recipient 23");
+        assertEq(fetchedDescriptions[24], "Additional Recipient 47");
+        assertEq(nextCursor, 50);
+
+        // Pagination (third page)
+        (
+            fetchedRecipients,
+            fetchedNames,
+            fetchedDescriptions,
+            nextCursor
+        ) = poas.getRecipientsPaginated(nextCursor, size);
+        assertEq(fetchedRecipients.length, 2);
+        assertEq(fetchedRecipients[0], additionalRecipientAddrs[48]);
+        assertEq(fetchedRecipients[1], additionalRecipientAddrs[49]);
+        assertEq(fetchedNames.length, 2);
+        assertEq(fetchedNames[0], "Additional Recipient 48");
+        assertEq(fetchedNames[1], "Additional Recipient 49");
+        assertEq(fetchedDescriptions.length, 2);
+        assertEq(fetchedDescriptions[0], "Additional Recipient 48");
+        assertEq(fetchedDescriptions[1], "Additional Recipient 49");
+        assertEq(nextCursor, 52);
+
+        // After retrieving all entries, empty arrays are returned
+        (
+            fetchedRecipients,
+            fetchedNames,
+            fetchedDescriptions,
+            nextCursor
+        ) = poas.getRecipientsPaginated(nextCursor, size);
+        assertEq(fetchedRecipients.length, 0);
+        assertEq(fetchedNames.length, 0);
+        assertEq(fetchedDescriptions.length, 0);
+        assertEq(nextCursor, 52);
+
+        // If cursor is out of range, empty arrays are returned
+        (fetchedRecipients, , , nextCursor) = poas.getRecipientsPaginated(
+            nextCursor + 100,
+            size
+        );
+        assertEq(fetchedRecipients.length, 0);
+        assertEq(nextCursor, 52);
+
+        // Check that removing Recipients doesn't leave gaps
+        address[] memory recipientsToRemove = new address[](1);
+        recipientsToRemove[0] = additionalRecipientAddrs[0];
+        poas.removeRecipients(recipientsToRemove);
+
+        (fetchedRecipients, , , ) = poas.getRecipientsPaginated(0, 100);
+        assertEq(fetchedRecipients.length, 51);
+        assertEq(fetchedRecipients[0], recipient1);
+        assertEq(fetchedRecipients[1], recipient2);
+        assertEq(fetchedRecipients[2], additionalRecipientAddrs[49]);
+        assertEq(fetchedRecipients[3], additionalRecipientAddrs[1]);
+        assertEq(fetchedRecipients[50], additionalRecipientAddrs[48]);
+
+        vm.stopPrank();
+    }
+
+    /**
+     * @dev Test retrieving the list of Recipients with pagination in JSON format
+     */
+    function test_getRecipientsJSONPaginated() public {
+        vm.startPrank(operator);
+        poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
+
+        // Add 50 additional Recipients
+        (
+            address[] memory additionalRecipientAddrs,
+            string[] memory additionalRecipientNames
+        ) = _makeRecipients(50);
+        poas.addRecipients(
+            additionalRecipientAddrs,
+            additionalRecipientNames,
+            additionalRecipientNames
+        );
+
+        (string memory json, uint256 nextCursor) = poas
+            .getRecipientsJSONPaginated(0, 100);
         assertEq(json.readAddress("$.[0].address"), recipient1);
         assertEq(
             json.readAddress("$.[51].address"),

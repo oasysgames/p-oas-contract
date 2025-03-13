@@ -234,7 +234,28 @@ interface IPOAS is IAccessControlEnumerableUpgradeable, IERC20Upgradeable {
     ) external view returns (string memory json);
 
     /**
-     * @dev Returns a list of Recipients
+     * @dev Returns all Recipients
+     * @return recipients List of Recipient addresses
+     * @return names List of names
+     * @return descriptions List of descriptions
+     */
+    function getRecipients()
+        external
+        view
+        returns (
+            address[] memory recipients,
+            string[] memory names,
+            string[] memory descriptions
+        );
+
+    /**
+     * @dev Returns all Recipients in JSON format
+     * @return json List of Recipients in JSON format
+     */
+    function getRecipientsJSON() external view returns (string memory json);
+
+    /**
+     * @dev Returns Recipients with pagination
      * @param cursor Cursor for pagination
      * @param size Size for pagination
      * @return recipients List of Recipient addresses
@@ -242,7 +263,7 @@ interface IPOAS is IAccessControlEnumerableUpgradeable, IERC20Upgradeable {
      * @return descriptions List of descriptions
      * @return nextCursor Next cursor for pagination
      */
-    function getRecipients(
+    function getRecipientsPaginated(
         uint256 cursor,
         uint256 size
     )
@@ -256,13 +277,13 @@ interface IPOAS is IAccessControlEnumerableUpgradeable, IERC20Upgradeable {
         );
 
     /**
-     * @dev Returns a list of Recipients in JSON format
+     * @dev Returns Recipients with pagination in JSON format
      * @param cursor Cursor for pagination
      * @param size Size for pagination
      * @return json List of Recipients in JSON format
      * @return nextCursor Next cursor for pagination
      */
-    function getRecipientsJSON(
+    function getRecipientsJSONPaginated(
         uint256 cursor,
         uint256 size
     ) external view returns (string memory json, uint256 nextCursor);
