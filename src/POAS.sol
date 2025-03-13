@@ -131,7 +131,7 @@ contract POAS is
     function withdrawCollateral(
         address to,
         uint256 amount
-    ) public virtual onlyRole(OPERATOR_ROLE) {
+    ) public virtual onlyRole(OPERATOR_ROLE) nonReentrant {
         if (amount > address(this).balance) {
             revert POASWithdrawCollateralError("insufficient collateral");
         }
