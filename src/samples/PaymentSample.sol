@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {POAS} from "./POAS.sol";
+import {POAS} from "../POAS.sol";
 
 contract PaymentSample is Ownable {
     POAS public poas;
