@@ -128,10 +128,20 @@ contract POAS is
     /**
      * @inheritdoc IPOAS
      */
-    function withdrawCollateral(
+    function withdrawCollateral(uint256 amount) public virtual {
+        withdrawCollateralTo(msg.sender, amount);
+    }
+
+    /**
+     * @inheritdoc IPOAS
+     */
+    function withdrawCollateralTo(
         address to,
         uint256 amount
     ) public virtual onlyRole(OPERATOR_ROLE) nonReentrant {
+        if (to == address(0)) {
+            revert POASWithdrawCollateralError("to address is zero");
+        }
         if (amount > address(this).balance) {
             revert POASWithdrawCollateralError("insufficient collateral");
         }

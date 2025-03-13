@@ -276,21 +276,18 @@ contract POASTest is Test {
         vm.prank(operator);
         poas.depositCollateral{value: 2}();
 
-        // Withdraw to an address different from operator
-        address recipient = makeAddr("recipient");
-
         vm.expectEmit();
-        emit CollateralWithdrawn(recipient, 1);
+        emit CollateralWithdrawn(operator, 1);
 
         vm.prank(operator);
-        poas.withdrawCollateral(recipient, 1);
-        assertEq(recipient.balance, 1);
+        poas.withdrawCollateral(1);
         assertEq(address(poas).balance, 1);
+        assertEq(operator.balance, 1 ether - 2 + 1);
 
         // Accounts without OPERATOR_ROLE cannot withdraw collateral
         vm.prank(holder);
         vm.expectRevert(_makeRoleError(holder, OPERATOR_ROLE));
-        poas.withdrawCollateral(recipient, 1);
+        poas.withdrawCollateral(1);
 
         // Insufficient collateral error
         vm.prank(operator);
@@ -300,17 +297,55 @@ contract POASTest is Test {
                 "insufficient collateral"
             )
         );
-        poas.withdrawCollateral(recipient, 2);
+        poas.withdrawCollateral(2);
 
         // Transfer failure error
-        vm.prank(operator);
+        // Should fail because this contract has no receive function
+        vm.prank(admin);
+        poas.grantRole(OPERATOR_ROLE, address(this));
+
+        vm.prank(address(this));
         vm.expectRevert(
             abi.encodeWithSelector(
                 POASWithdrawCollateralError.selector,
                 "transfer failed"
             )
         );
-        poas.withdrawCollateral(address(this), 1); // Should fail because this contract has no receive function
+        poas.withdrawCollateral(1);
+    }
+
+    /**
+     * @dev Test collateral withdrawal to a specific address
+     */
+    function test_withdrawCollateralTo() public {
+        vm.prank(operator);
+        poas.depositCollateral{value: 2}();
+
+        // Withdraw to an address different from operator
+        address recipient = makeAddr("recipient");
+
+        vm.expectEmit();
+        emit CollateralWithdrawn(recipient, 1);
+
+        vm.prank(operator);
+        poas.withdrawCollateralTo(recipient, 1);
+        assertEq(address(poas).balance, 1);
+        assertEq(recipient.balance, 1);
+
+        // Accounts without OPERATOR_ROLE cannot withdraw collateral
+        vm.prank(holder);
+        vm.expectRevert(_makeRoleError(holder, OPERATOR_ROLE));
+        poas.withdrawCollateralTo(recipient, 1);
+
+        // To is zero address
+        vm.prank(operator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                POASWithdrawCollateralError.selector,
+                "to address is zero"
+            )
+        );
+        poas.withdrawCollateralTo(address(0), 1);
     }
 
     /**

@@ -175,10 +175,16 @@ interface IPOAS is IAccessControlEnumerableUpgradeable, IERC20Upgradeable {
 
     /**
      * @dev Withdraw collateral from the contract
+     * @param amount The amount to withdraw
+     */
+    function withdrawCollateral(uint256 amount) external;
+
+    /**
+     * @dev Withdraw collateral from the contract to a specific address
      * @param to The withdrawal address
      * @param amount The amount to withdraw
      */
-    function withdrawCollateral(address to, uint256 amount) external;
+    function withdrawCollateralTo(address to, uint256 amount) external;
 
     /**
      * @dev Returns the ratio of collateral to token totalSupply in 1e18 format
