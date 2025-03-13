@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./POAS.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {POAS} from "./POAS.sol";
 
 contract ClaimSample is Ownable {
     POAS public poas;
@@ -11,7 +11,7 @@ contract ClaimSample is Ownable {
 
     event Claimed(address indexed user, uint256 amount);
 
-    constructor(address poasAddress) Ownable(msg.sender) {
+    constructor(address poasAddress) Ownable() {
         poas = POAS(poasAddress);
     }
 
@@ -20,8 +20,8 @@ contract ClaimSample is Ownable {
         hasClaimed[msg.sender] = true;
 
         require(
-            poas.hasRole(poas.MANAGER_ROLE(), address(this)),
-            "Contract needs MANAGER_ROLE"
+            poas.hasRole(poas.OPERATOR_ROLE(), address(this)),
+            "Contract needs OPERATOR_ROLE"
         );
 
         poas.mint(msg.sender, CLAIM_AMOUNT);
