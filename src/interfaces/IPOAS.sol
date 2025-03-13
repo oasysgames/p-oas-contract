@@ -107,11 +107,6 @@ interface IPOAS is IAccessControlEnumerableUpgradeable, IERC20Upgradeable {
     error POASRemoveRecipientError(string message);
 
     /**
-     * @dev Returns the ADMIN_ROLE
-     */
-    function ADMIN_ROLE() external view returns (bytes32);
-
-    /**
      * @dev Returns the OPERATOR_ROLE
      */
     function OPERATOR_ROLE() external view returns (bytes32);

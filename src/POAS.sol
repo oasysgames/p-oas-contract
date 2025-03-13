@@ -26,7 +26,6 @@ contract POAS is
     ERC20BurnableUpgradeable,
     IPOAS
 {
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
     bytes32 public constant RECIPIENT_ROLE = keccak256("RECIPIENT_ROLE");
 
@@ -56,10 +55,7 @@ contract POAS is
         __ERC20Burnable_init();
 
         // Set up roles
-        _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
-        _setRoleAdmin(OPERATOR_ROLE, ADMIN_ROLE);
-        _setRoleAdmin(RECIPIENT_ROLE, ADMIN_ROLE);
-        _grantRole(ADMIN_ROLE, _admin);
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
     /**
@@ -222,7 +218,7 @@ contract POAS is
         address[] calldata recipients,
         string[] calldata names,
         string[] calldata descriptions
-    ) public virtual onlyRole(ADMIN_ROLE) {
+    ) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = recipients.length;
         if (length != names.length || length != descriptions.length) {
             revert POASAddRecipientError("array length mismatch");
@@ -257,7 +253,7 @@ contract POAS is
      */
     function removeRecipients(
         address[] calldata recipients
-    ) public virtual onlyRole(ADMIN_ROLE) {
+    ) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 length = recipients.length;
         for (uint256 i = 0; i < length; i++) {
             address recipient = recipients[i];

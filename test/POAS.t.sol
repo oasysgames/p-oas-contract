@@ -10,7 +10,7 @@ import {IPOAS} from "../src/interfaces/IPOAS.sol";
 contract POASTest is Test {
     using stdJson for string;
 
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
     bytes32 public constant RECIPIENT_ROLE = keccak256("RECIPIENT_ROLE");
 
@@ -143,13 +143,8 @@ contract POASTest is Test {
      * @dev Test role state after initialization
      */
     function test_InitialRoles() public view {
-        // Check role admin settings
-        assertEq(poas.getRoleAdmin(ADMIN_ROLE), ADMIN_ROLE);
-        assertEq(poas.getRoleAdmin(OPERATOR_ROLE), ADMIN_ROLE);
-        assertEq(poas.getRoleAdmin(RECIPIENT_ROLE), ADMIN_ROLE);
-
-        // Check if admin has ADMIN_ROLE
-        assertEq(poas.hasRole(ADMIN_ROLE, admin), true);
+        // Check if admin has DEFAULT_ADMIN_ROLE
+        assertEq(poas.hasRole(DEFAULT_ADMIN_ROLE, admin), true);
 
         // Check that admin doesn't have unnecessary roles
         assertEq(poas.hasRole(OPERATOR_ROLE, admin), false);
@@ -404,8 +399,8 @@ contract POASTest is Test {
         assertEq(poas.hasRole(RECIPIENT_ROLE, recipient1), true);
         assertEq(poas.hasRole(RECIPIENT_ROLE, recipient2), true);
 
-        // Accounts without ADMIN_ROLE cannot add Recipients
-        vm.expectRevert(_makeRoleError(operator, ADMIN_ROLE));
+        // Accounts without DEFAULT_ADMIN_ROLE cannot add Recipients
+        vm.expectRevert(_makeRoleError(operator, DEFAULT_ADMIN_ROLE));
         vm.prank(operator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
@@ -495,8 +490,8 @@ contract POASTest is Test {
         assertEq(poas.hasRole(RECIPIENT_ROLE, recipient1), false);
         assertEq(poas.hasRole(RECIPIENT_ROLE, recipient2), true);
 
-        // Accounts without ADMIN_ROLE cannot remove Recipients
-        vm.expectRevert(_makeRoleError(operator, ADMIN_ROLE));
+        // Accounts without DEFAULT_ADMIN_ROLE cannot remove Recipients
+        vm.expectRevert(_makeRoleError(operator, DEFAULT_ADMIN_ROLE));
         vm.prank(operator);
         poas.removeRecipients(recipientsToRemove);
 
@@ -538,7 +533,7 @@ contract POASTest is Test {
 
         // Verify that the implementation calls `super.grantRole` and not `super._grantRole`
         // which would bypass the onlyRole access control
-        vm.expectRevert(_makeRoleError(holder, ADMIN_ROLE));
+        vm.expectRevert(_makeRoleError(holder, DEFAULT_ADMIN_ROLE));
         vm.prank(holder);
         poas.grantRole(OPERATOR_ROLE, holder);
     }
