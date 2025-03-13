@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./POAS.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {POAS} from "../POAS.sol";
 
 contract PaymentSample is Ownable {
     POAS public poas;
@@ -10,12 +10,12 @@ contract PaymentSample is Ownable {
     event PaymentReceived(address indexed from, uint256 amount);
     event OASWithdrawn(address indexed to, uint256 amount);
 
-    constructor(address poasAddress) Ownable(msg.sender) {
+    constructor(address poasAddress) Ownable() {
         poas = POAS(poasAddress);
-        // コントラクトデプロイ時にPAYMENT_ROLEを取得する必要がある
+        // コントラクトデプロイ時にRECIPIENT_ROLEを取得する必要がある
         require(
-            poas.hasRole(poas.PAYMENT_ROLE(), address(this)),
-            "Contract needs PAYMENT_ROLE"
+            poas.hasRole(poas.RECIPIENT_ROLE(), address(this)),
+            "Contract needs RECIPIENT_ROLE"
         );
     }
 
