@@ -392,19 +392,19 @@ contract POASTest is Test {
         vm.expectEmit();
         emit RecipientAdded(recipient2, "Recipient 2", "Second recipient");
 
-        vm.prank(admin);
+        vm.prank(operator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
         assertEq(poas.getRecipientCount(), 2);
         assertEq(poas.hasRole(RECIPIENT_ROLE, recipient1), true);
         assertEq(poas.hasRole(RECIPIENT_ROLE, recipient2), true);
 
-        // Accounts without DEFAULT_ADMIN_ROLE cannot add Recipients
-        vm.expectRevert(_makeRoleError(operator, DEFAULT_ADMIN_ROLE));
-        vm.prank(operator);
+        // Accounts without OPERATOR_ROLE cannot add Recipients
+        vm.expectRevert(_makeRoleError(admin, OPERATOR_ROLE));
+        vm.prank(admin);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
-        vm.startPrank(admin);
+        vm.startPrank(operator);
 
         // Array lengths must match
         vm.expectRevert(
@@ -477,25 +477,25 @@ contract POASTest is Test {
         address[] memory recipientsToRemove = new address[](1);
         recipientsToRemove[0] = recipient1;
 
-        vm.prank(admin);
+        vm.prank(operator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
         vm.expectEmit();
         emit RecipientRemoved(recipient1, "Recipient 1");
 
-        vm.prank(admin);
+        vm.prank(operator);
         poas.removeRecipients(recipientsToRemove);
 
         assertEq(poas.getRecipientCount(), 1);
         assertEq(poas.hasRole(RECIPIENT_ROLE, recipient1), false);
         assertEq(poas.hasRole(RECIPIENT_ROLE, recipient2), true);
 
-        // Accounts without DEFAULT_ADMIN_ROLE cannot remove Recipients
-        vm.expectRevert(_makeRoleError(operator, DEFAULT_ADMIN_ROLE));
-        vm.prank(operator);
+        // Accounts without OPERATOR_ROLE cannot remove Recipients
+        vm.expectRevert(_makeRoleError(admin, OPERATOR_ROLE));
+        vm.prank(admin);
         poas.removeRecipients(recipientsToRemove);
 
-        vm.startPrank(admin);
+        vm.startPrank(operator);
 
         // Recipient cannot be zero address
         vm.expectRevert(
@@ -542,7 +542,7 @@ contract POASTest is Test {
      * @dev Test Recipient retrieval
      */
     function test_getRecipient() public {
-        vm.prank(admin);
+        vm.prank(operator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
         (string memory name, string memory desc) = poas.getRecipient(
@@ -562,7 +562,7 @@ contract POASTest is Test {
      * @dev Test Recipient JSON retrieval
      */
     function test_getRecipientJSON() public {
-        vm.prank(admin);
+        vm.prank(operator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
         string memory json = poas.getRecipientJSON(recipient1);
@@ -581,7 +581,7 @@ contract POASTest is Test {
      * @dev Test retrieving the list of Recipients
      */
     function test_getRecipients() public {
-        vm.startPrank(admin);
+        vm.startPrank(operator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
         // Add 50 additional Recipients
@@ -716,7 +716,7 @@ contract POASTest is Test {
      * @dev Test retrieving the list of Recipients in JSON format
      */
     function test_getRecipientsJSON() public {
-        vm.startPrank(admin);
+        vm.startPrank(operator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
         // Add 50 additional Recipients
@@ -756,7 +756,7 @@ contract POASTest is Test {
      */
     function test_transferFrom() public {
         // Add Recipients
-        vm.prank(admin);
+        vm.prank(operator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
         // Add collateral
@@ -840,7 +840,7 @@ contract POASTest is Test {
         string[] memory additionalRecipientNames = new string[](1);
         additionalRecipientAddrs[0] = address(this);
         additionalRecipientNames[0] = "this";
-        vm.prank(admin);
+        vm.prank(operator);
         poas.addRecipients(
             additionalRecipientAddrs,
             additionalRecipientNames,

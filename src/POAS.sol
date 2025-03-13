@@ -218,7 +218,7 @@ contract POAS is
         address[] calldata recipients,
         string[] calldata names,
         string[] calldata descriptions
-    ) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) public virtual onlyRole(OPERATOR_ROLE) {
         uint256 length = recipients.length;
         if (length != names.length || length != descriptions.length) {
             revert POASAddRecipientError("array length mismatch");
@@ -253,7 +253,7 @@ contract POAS is
      */
     function removeRecipients(
         address[] calldata recipients
-    ) public virtual onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) public virtual onlyRole(OPERATOR_ROLE) {
         uint256 length = recipients.length;
         for (uint256 i = 0; i < length; i++) {
             address recipient = recipients[i];
