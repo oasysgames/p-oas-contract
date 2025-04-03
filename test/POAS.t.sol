@@ -172,7 +172,7 @@ contract POASTest is Test {
 
         // Cannot mint zero amount
         vm.expectRevert(
-            abi.encodeWithSelector(POASMintError.selector, "ammount is zero")
+            abi.encodeWithSelector(POASMintError.selector, "amount is zero")
         );
         vm.prank(operator);
         poas.mint(holder, 0);
@@ -240,7 +240,7 @@ contract POASTest is Test {
 
         // Cannot burn zero amount
         vm.expectRevert(
-            abi.encodeWithSelector(POASBurnError.selector, "ammount is zero")
+            abi.encodeWithSelector(POASBurnError.selector, "amount is zero")
         );
         vm.prank(holder);
         poas.burn(0);
@@ -882,7 +882,7 @@ contract POASTest is Test {
 
         // Zero amount
         vm.expectRevert(
-            abi.encodeWithSelector(POASPaymentError.selector, "ammount is zero")
+            abi.encodeWithSelector(POASPaymentError.selector, "amount is zero")
         );
         vm.prank(payOperator);
         poas.transferFrom(holder, recipient1, 0);

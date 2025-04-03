@@ -93,7 +93,7 @@ contract POAS is
         if (length != amounts.length) {
             revert POASMintError("array length mismatch");
         }
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             _mint(accounts[i], amounts[i]);
         }
     }
@@ -132,7 +132,7 @@ contract POAS is
     function withdrawCollateralTo(
         address to,
         uint256 amount
-    ) public virtual onlyRole(OPERATOR_ROLE) nonReentrant {
+    ) public virtual nonReentrant onlyRole(OPERATOR_ROLE) {
         if (to == address(0)) {
             revert POASWithdrawCollateralError("to address is zero");
         }
@@ -192,7 +192,7 @@ contract POAS is
             revert POASPaymentError("recipient not found");
         }
         if (amount == 0) {
-            revert POASPaymentError("ammount is zero");
+            revert POASPaymentError("amount is zero");
         }
         if (amount > address(this).balance) {
             revert POASPaymentError("insufficient collateral");
@@ -224,7 +224,7 @@ contract POAS is
             revert POASAddRecipientError("array length mismatch");
         }
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address recipient = recipients[i];
             string memory name = names[i];
             string memory description = descriptions[i];
@@ -255,7 +255,7 @@ contract POAS is
         address[] calldata recipients
     ) public virtual onlyRole(OPERATOR_ROLE) {
         uint256 length = recipients.length;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             address recipient = recipients[i];
             if (recipient == address(0)) {
                 revert POASRemoveRecipientError("recipient address is zero");
@@ -266,6 +266,9 @@ contract POAS is
 
             _revokeRole(RECIPIENT_ROLE, recipient);
             emit RecipientRemoved(recipient, _recipientNames[recipient]);
+            // Clear recipient data
+            delete _recipientNames[recipient];
+            delete _recipientDescriptions[recipient];
         }
     }
 
@@ -389,7 +392,7 @@ contract POAS is
         recipients = new address[](resultSize);
         names = new string[](resultSize);
         descriptions = new string[](resultSize);
-        for (uint256 i = 0; i < resultSize; i++) {
+        for (uint256 i; i < resultSize; ++i) {
             uint256 memberIndex = cursor + i;
             recipients[i] = getRoleMember(RECIPIENT_ROLE, memberIndex);
             names[i] = _recipientNames[recipients[i]];
@@ -414,7 +417,7 @@ contract POAS is
 
         uint256 length = recipients.length;
         json = "[";
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i; i < length; ++i) {
             if (i > 0) {
                 json = string.concat(json, ",");
             }
@@ -446,7 +449,7 @@ contract POAS is
      */
     function _mint(address account, uint256 amount) internal virtual override {
         if (amount == 0) {
-            revert POASMintError("ammount is zero");
+            revert POASMintError("amount is zero");
         }
         super._mint(account, amount);
         _totalMinted += amount;
@@ -461,7 +464,7 @@ contract POAS is
      */
     function _burn(address account, uint256 amount) internal virtual override {
         if (amount == 0) {
-            revert POASBurnError("ammount is zero");
+            revert POASBurnError("amount is zero");
         }
         super._burn(account, amount);
         _totalBurned += amount;
