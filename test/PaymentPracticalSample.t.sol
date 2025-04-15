@@ -11,8 +11,13 @@ contract ExContract {
     mapping(address => uint256) public payments;
     bool public flgErr;
     bool public flgCustomErr;
+    bytes public data;
     error ExContractError(address buyer, uint256 price, string message);
-    function onPaied(address buyer, uint256 price) external {
+    function onPaied(
+        address buyer,
+        uint256 price,
+        bytes calldata data_
+    ) external {
         if (flgCustomErr) {
             revert ExContractError(buyer, price, "ExContract: custom error");
         }
@@ -20,6 +25,7 @@ contract ExContract {
             revert("ExContract: error");
         }
         payments[buyer] += price;
+        data = data_;
     }
     function onFlgErr() external {
         flgErr = true;
@@ -136,6 +142,29 @@ contract PaymentPracticalSampleTest is Test {
         assertEq(address(payment).balance, price);
     }
 
+    function test_pay_withCalldata() public {
+        vm.prank(poasOperator);
+        poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
+
+        vm.prank(buyer1);
+        poas.approve(address(payment), price);
+
+        poas.allowance(buyer1, address(payment));
+        assertEq(poas.allowance(buyer1, address(payment)), price);
+
+        vm.expectEmit();
+        emit PaymentReceived(buyer1, price);
+
+        bytes memory _data = "test data";
+        vm.prank(buyer1);
+        payment.pay(_data);
+
+        assertEq(payment.payments(buyer1), price);
+        assertEq(exContract.payments(buyer1), price);
+        assertEq(exContract.data().length, _data.length);
+        assertEq(address(payment).balance, price);
+    }
+
     function test_pay_reverts() public {
         // Case: No mayment role
         vm.expectRevert("Contract needs RECIPIENT_ROLE");
@@ -182,6 +211,20 @@ contract PaymentPracticalSampleTest is Test {
 
         assertEq(payment.payments(buyer2), price);
         assertEq(exContract.payments(buyer2), price);
+        assertEq(address(payment).balance, price);
+    }
+
+    function test_payByNative_withCalldata() public {
+        vm.expectEmit();
+        emit PaymentReceived(buyer2, price);
+
+        bytes memory _data = "test data";
+        vm.prank(buyer2);
+        payment.payByNative{value: price}(_data);
+
+        assertEq(payment.payments(buyer2), price);
+        assertEq(exContract.payments(buyer2), price);
+        assertEq(exContract.data().length, _data.length);
         assertEq(address(payment).balance, price);
     }
 

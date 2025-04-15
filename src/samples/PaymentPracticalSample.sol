@@ -94,13 +94,15 @@ contract PaymentPracticalSample is OwnableUpgradeable {
      *      Transfers the specified price from the sender to this contract.
      */
     function pay() external hasRecipientRole {
-        address from = msg.sender;
-        uint256 price_ = price();
-        _validateAllowance(from, price_);
+        _pay("");
+    }
 
-        poas.transferFrom(from, address(this), price_);
-
-        _afterPayment(from, price_);
+    /**
+     * @dev Accept calldata from the user and pass it to the external contract.
+     * @param data Additional data to be passed along with the payment.
+     */
+    function pay(bytes calldata data) external hasRecipientRole {
+        _pay(data);
     }
 
     /**
@@ -108,11 +110,15 @@ contract PaymentPracticalSample is OwnableUpgradeable {
      *      Requires the sent amount to match the specified price.
      */
     function payByNative() external payable {
-        address from = msg.sender;
-        uint256 price_ = price();
-        _validatePayment(msg.value, price_);
+        _payByNative("");
+    }
 
-        _afterPayment(from, price_);
+    /**
+     * @dev Accept calldata from the user and pass it to the external contract.
+     * @param data Additional data to be passed along with the payment.
+     */
+    function payByNative(bytes calldata data) external payable {
+        _payByNative(data);
     }
 
     /**
@@ -126,6 +132,24 @@ contract PaymentPracticalSample is OwnableUpgradeable {
         (bool success, ) = recipient.call{value: amount}("");
         require(success, "Transfer failed");
         emit Withdrawn(recipient, amount);
+    }
+
+    function _pay(bytes memory data) internal virtual {
+        address from = msg.sender;
+        uint256 price_ = price();
+        _validateAllowance(from, price_);
+
+        poas.transferFrom(from, address(this), price_);
+
+        _afterPayment(from, price_, data);
+    }
+
+    function _payByNative(bytes memory data) internal virtual {
+        address from = msg.sender;
+        uint256 price_ = price();
+        _validatePayment(msg.value, price_);
+
+        _afterPayment(from, price_, data);
     }
 
     /**
@@ -170,14 +194,16 @@ contract PaymentPracticalSample is OwnableUpgradeable {
      *      Can be overridden to customize the calldata format.
      * @param buyer Address of the buyer making the payment.
      * @param price_ Amount paid by the buyer.
+     * @param data_ Additional data to be passed to the external contract.
      * @return Calldata to be sent to the external contract.
      */
     function _createCalldata(
         address buyer,
-        uint256 price_
+        uint256 price_,
+        bytes memory data_
     ) internal virtual returns (bytes memory) {
-        bytes4 selector = bytes4(keccak256("onPaied(address,uint256)"));
-        bytes memory encodedArgs = abi.encode(buyer, price_);
+        bytes4 selector = bytes4(keccak256("onPaied(address,uint256,bytes)"));
+        bytes memory encodedArgs = abi.encode(buyer, price_, data_);
         return abi.encodePacked(selector, encodedArgs);
     }
 
@@ -186,13 +212,15 @@ contract PaymentPracticalSample is OwnableUpgradeable {
      *      Reverts if the external call fails.
      * @param buyer Address of the buyer making the payment.
      * @param price_ Amount paid by the buyer.
+     * @param data_ Additional data to be passed to the external contract.
      */
     function _exCallIfNeed(
         address buyer,
-        uint256 price_
+        uint256 price_,
+        bytes memory data_
     ) internal virtual {
         if (exContract != address(0)) {
-            bytes memory data = _createCalldata(buyer, price_);
+            bytes memory data = _createCalldata(buyer, price_, data_);
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, bytes memory reason) = exContract.call(data);
             if (!success) {
@@ -216,13 +244,18 @@ contract PaymentPracticalSample is OwnableUpgradeable {
      *      and calling the external contract if configured.
      * @param buyer Address of the buyer making the payment.
      * @param price_ Amount paid by the buyer.
+     * @param data_ Additional data to be passed to the external contract.
      */
-    function _afterPayment(address buyer, uint256 price_) internal virtual {
+    function _afterPayment(
+        address buyer,
+        uint256 price_,
+        bytes memory data_
+    ) internal virtual {
         // Record the payment made by the buyer
         payments[buyer] += price_;
 
         // Call the external contract with buyer and price info if needed
-        _exCallIfNeed(buyer, price_);
+        _exCallIfNeed(buyer, price_, data_);
 
         // Emit event for successful payment
         emit PaymentReceived(buyer, price_);
