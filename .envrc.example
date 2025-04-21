@@ -1,0 +1,22 @@
+# The rpc url of the OASYS network
+export RPC_URL=https://rpc.mainnet.oasys.games
+
+# The deployer private key
+export PRIVATE_KEY="your-private-key"
+
+# The address of the POAS admin
+export POAS_ADMIN=
+
+# The address of the proxy owner.
+# As a note, pOAS is upgradable proxy contract
+export PROXY_OWNER=
+
+# The flag to indicate if the proxy admin is used
+# Proxy adimin is deployed by default at the moment pPOAS is deployed via Deploy script
+# Set false if you want to prevent ProxyAdmin from being used. In this case,
+# you can not use the same address for POAS_ADMIN and PROXY_OWNER
+export USE_PROXY_ADMIN=true
+
+# The key of the etherscan API
+# No need to change for Oasys explorer
+export ETHERSCAN_API_KEY=dummy

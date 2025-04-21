@@ -11,3 +11,7 @@ remappings = [
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[etherscan]
+oasys-mainnet = { key = "${ETHERSCAN_API_KEY}", chain = "248", url = "https://explorer.oasys.games/api" }
+oasys-testnet = { key = "${ETHERSCAN_API_KEY}", chain = "9372", url = "https://explorer.testnet.oasys.games/api" }

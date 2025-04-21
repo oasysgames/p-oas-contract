@@ -6,8 +6,8 @@
   "scripts": {
     "compile": "forge build",
     "test": "forge build",
-    "deploy": "echo TODO",
-    "deploy:oasys": "echo TODO",
+    "deploy": "forge script script/DeployPOAS.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify",
+    "chain": "anvil",
     "fmt": "prettier --write --list-different '{src,test,tasks}/**/*.{sol,ts}'",
     "lint": "solhint 'src/**/*.sol'",
     "lint:fix": "solhint 'src/**/*.sol' --fix"
