@@ -36,3 +36,26 @@ Although pOAS holds the same value as OAS, it is not fully collateralized. The c
 ## Sample Contracts
 - [PaymentSample](./src/samples/PaymentSample.sol): A contract that accepts pOAS as a payment method.
 - [ClaimSample](./src/samples/ClaimSample.sol): A contract for distributing pOAS to users as part of promotional campaigns or in-game events.
+
+## Deploy
+You can deploy the pOAS contract easily using the pre-configured deployment script.
+
+1. Set Up Environment Variables
+First, copy the example environment file and adjust it to your own setup:
+```sh
+cp .envrc.example .envrc
+```
+This script deploys pOAS as an upgradeable proxy, so a proxy admin address is required. In most cases, the proxy admin and the pOAS admin are the same address. You can simply specify the same address in your environment variables. Check the comments in `.envrc.example` for more detailed guidance on each variable.
+
+2. Configure Explorer for Contract Verification
+To enable contract verification on your block explorer, add the following to `foundry.toml`:
+```toml
+[etherscan]
+yourchain = { key = "${ETHERSCAN_API_KEY}", chain = "chainID", url = "https://explorer-domain/api" }
+```
+
+3. Deploy & Verify
+Once your environment is configured, run the deployment script:
+```sh
+npm run deploy
+```
