@@ -20,3 +20,17 @@ export USE_PROXY_ADMIN=true
 # The key of the etherscan API
 # No need to change for Oasys explorer
 export ETHERSCAN_API_KEY=dummy
+
+
+# --------------------------------------------
+# For PaymentPracticalSample
+# ---------------------------------------------
+# the address of the POAS
+export POAS_ADDRESS=0xFA5D573d70fCEfBa19cC0e48d1371CbEa1C147ba
+
+# The address of external contract
+export EX_CONTRACT=0x0000000000000000000000000000000000000000
+
+# The price of the payment(Unit: wei)
+export PAYMENT_PRICE=10000000000000000
+

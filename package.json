@@ -1,12 +1,13 @@
 {
   "name": "p-oas-contract",
   "description": "Collateral-backed point OAS token contract on the OAS chain.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "scripts": {
     "compile": "forge build",
     "test": "forge build",
     "deploy": "forge script script/DeployPOAS.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify",
+    "deploy:sample": "forge script script/DeploySample.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --verify",
     "chain": "anvil",
     "fmt": "prettier --write --list-different '{src,test,tasks}/**/*.{sol,ts}'",
     "lint": "solhint 'src/**/*.sol'",
