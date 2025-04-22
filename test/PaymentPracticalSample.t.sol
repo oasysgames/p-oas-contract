@@ -13,7 +13,7 @@ contract ExContract {
     bool public flgCustomErr;
     bytes public data;
     error ExContractError(address buyer, uint256 price, string message);
-    function onPaied(
+    function onPaid(
         address buyer,
         uint256 price,
         bytes calldata data_

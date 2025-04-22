@@ -202,7 +202,7 @@ contract PaymentPracticalSample is OwnableUpgradeable {
         uint256 price_,
         bytes memory data_
     ) internal virtual returns (bytes memory) {
-        bytes4 selector = bytes4(keccak256("onPaied(address,uint256,bytes)"));
+        bytes4 selector = bytes4(keccak256("onPaid(address,uint256,bytes)"));
         bytes memory encodedArgs = abi.encode(buyer, price_, data_);
         return abi.encodePacked(selector, encodedArgs);
     }
