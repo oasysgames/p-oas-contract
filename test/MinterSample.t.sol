@@ -47,6 +47,7 @@ contract MinterSampleTest is Test {
     address public poasAdmin;
     address public poasOperator;
 
+    address public owner;
     address public buyer1;
     address public buyer2;
 
@@ -54,6 +55,7 @@ contract MinterSampleTest is Test {
     string[] public recipientNames;
     string[] public recipientDescs;
 
+    uint256 public minCap = 3 ether;
     uint256 public amount = 0.5 ether;
     uint256 public price = 1 ether;
 
@@ -65,6 +67,7 @@ contract MinterSampleTest is Test {
         // Deployment and initial setup
         deployer = makeAddr("deployer");
         poasAdmin = makeAddr("poasAdmin");
+        owner = makeAddr("owner");
         buyer1 = makeAddr("buyer1");
         buyer2 = makeAddr("buyer2");
 
@@ -86,7 +89,9 @@ contract MinterSampleTest is Test {
                 deployer, // Owner of the Proxy itself
                 abi.encodeWithSelector(
                     MinterSample.initialize.selector,
-                    poasProxy
+                    owner,
+                    poasProxy,
+                    minCap
                 )
             );
 
@@ -244,6 +249,6 @@ contract MinterSampleTest is Test {
 
         // Make sure the the proxy storage is still intact by trying initialization
         vm.expectRevert("Initializable: contract is already initialized");
-        minter.initialize(address(poas));
+        minter.initialize(owner, address(poas), minCap);
     }
 }
