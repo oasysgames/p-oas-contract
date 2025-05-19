@@ -12,12 +12,15 @@ contract Payment {
     MinterSample public minter;
     IPOAS public poas;
     uint256 public backRate = 20;
+
     constructor(uint256 _price, address _minter, address _poas) {
         price = _price;
         minter = MinterSample(_minter);
         poas = IPOAS(_poas);
     }
+
     receive() external payable {}
+
     function pay(uint256 poasAmount) external payable {
         require(
             price == poasAmount + msg.value,
@@ -62,6 +65,7 @@ contract MinterSampleTest is Test {
 
     event MinterReceived(address indexed from, uint256 amount);
     event Withdrawn(address indexed to, uint256 amount);
+
     error ExContractError(address buyer, uint256 price, string message);
 
     function setUp() public {
@@ -249,6 +253,72 @@ contract MinterSampleTest is Test {
         vm.expectRevert("Sum of amounts mismatch value");
         vm.prank(buyer1);
         minter.bulkMint{value: amount * 2}(accounts2, amounts);
+    }
+
+    function test_mintrate() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        vm.prank(poasAdmin);
+        poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        uint16 newMinRate = 250;
+
+        // Case: fail to set by invalid owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(buyer1);
+        minter.updateMintRate(newMinRate);
+
+        // Case: succeed to set by owner
+        vm.prank(owner);
+        minter.updateMintRate(newMinRate);
+        assertEq(minter.mintRate(), newMinRate);
+
+        vm.prank(owner);
+        minter.addWhitelist(buyers);
+
+        vm.prank(buyer1);
+        minter.mint{value: amount}(amount);
+
+        assertEq(poas.balanceOf(buyer1), (amount * newMinRate) / 100);
+        assertEq(address(poas).balance, amount);
+    }
+
+    function test_whitelist() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+
+        // Case: fail to add by invalid owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(buyer1);
+        minter.addWhitelist(buyers);
+
+        // Case: succeed to adding by owner
+        vm.prank(owner);
+        minter.addWhitelist(buyers);
+        assertEq(minter.whitelist(0), buyer1);
+        assertEq(minter.whitelist(1), buyer2);
+        assertEq(minter.whitelistMap(buyer1), true);
+        assertEq(minter.whitelistMap(buyer2), true);
+
+        // Case: Already whitelisted
+        vm.expectRevert("Already whitelisted");
+        vm.prank(owner);
+        minter.addWhitelist(buyers);
+
+        // Case: failed to remove by invalid owner
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(buyer1);
+        minter.removeWhitelist(buyers);
+
+        // Case: succeed to removing by owner
+        vm.prank(owner);
+        minter.removeWhitelist(buyers);
+        assertEq(minter.whitelistMap(buyer1), false);
+        assertEq(minter.whitelistMap(buyer2), false);
+        vm.expectRevert();
+        minter.whitelist(0);
+
+        // Case: Not whitelisted
+        vm.expectRevert("Not whitelisted");
+        vm.prank(owner);
+        minter.removeWhitelist(buyers);
     }
 
     function test_UpgradeImplementation() public {
