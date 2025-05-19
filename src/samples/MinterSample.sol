@@ -23,8 +23,10 @@ contract MinterSample is OwnableUpgradeable {
     uint256 public mintedAmount;
 
     /// @dev Mint rate in basis points (1 = 0.01%, 100 = 1%, 10000 = 100%)
-    ///      Default 100 (1:1 ratio between deposited OAS and minted POAS)
-    uint16 public mintRate = 100;
+    uint16 public mintRate;
+
+    /// @dev Default mint rate in basis points (1 = 0.01%, 100 = 1%, 10000 = 100%)
+    uint16 public constant DEFAULT_MINTRATE = 100;
 
     /// @dev List of whitelisted addresses allowed to mint
     address[] public whitelist;
@@ -69,6 +71,9 @@ contract MinterSample is OwnableUpgradeable {
         _transferOwnership(owner);
         poas = IPOAS(poasAddress);
         mintCap = mintCap_;
+        // To support proxy, we set mint rate here, avoid directly in code
+        //  uint16 public mintRate; <- this will return 0 in proxy
+        mintRate = DEFAULT_MINTRATE;
     }
 
     /**
@@ -190,9 +195,7 @@ contract MinterSample is OwnableUpgradeable {
      * @param amount The amount of OAS to deposit (in wei)
      * @return The calculated mint amount based on the mint rate
      */
-    function _mintAmount(
-        uint256 amount
-    ) internal view virtual returns (uint256) {
+    function _mintAmount(uint256 amount) public view virtual returns (uint256) {
         return (amount * mintRate) / 100;
     }
 

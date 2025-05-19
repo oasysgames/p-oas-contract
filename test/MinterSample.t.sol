@@ -50,6 +50,7 @@ contract MinterSampleTest is Test {
     address public owner;
     address public buyer1;
     address public buyer2;
+    address[] public buyers;
 
     address[] public recipientAddrs;
     string[] public recipientNames;
@@ -118,6 +119,9 @@ contract MinterSampleTest is Test {
         recipientDescs.push("description");
         vm.prank(poasOperator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
+
+        buyers.push(buyer1);
+        buyers.push(buyer2);
     }
 
     function test_cacheback() public {
@@ -126,6 +130,8 @@ contract MinterSampleTest is Test {
         poas.mint(buyer1, buyerInitalPOAS);
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        MinterSample(payable(address(minterProxy))).addWhitelist(buyers);
 
         uint256 poasAmount = price - amount;
         uint256 collateralAmount = poasAmount;
@@ -150,6 +156,8 @@ contract MinterSampleTest is Test {
         MinterSample minter = MinterSample(payable(address(minterProxy)));
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(buyers);
 
         vm.prank(buyer1);
         minter.mint{value: amount}(amount);
@@ -172,10 +180,16 @@ contract MinterSampleTest is Test {
         vm.prank(buyer1);
         minter.mint{value: amount}(amount);
 
-        // Case: Invalid amount
+        // Case: not whitelisted
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
-        vm.expectRevert("Sum of amounts mismatch value");
+        vm.expectRevert("Not whitelisted");
+        minter.mint{value: amount}(amount);
+
+        // Case: Invalid amount
+        vm.prank(owner);
+        minter.addWhitelist(buyers);
+        vm.expectRevert("Amount mismatch");
         vm.prank(buyer1);
         minter.mint(amount);
 
@@ -183,12 +197,19 @@ contract MinterSampleTest is Test {
         vm.expectRevert("Empty address");
         vm.prank(buyer1);
         minter.mint{value: amount}(address(0), amount);
+
+        // Case: over max cap
+        vm.expectRevert("Mint cap exceeded");
+        vm.prank(buyer1);
+        minter.mint{value: minCap + 1}(minCap + 1);
     }
 
     function test_bulkMint() public {
         MinterSample minter = MinterSample(payable(address(minterProxy)));
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(buyers);
 
         address[] memory accounts = new address[](2);
         accounts[0] = buyer1;
@@ -208,6 +229,8 @@ contract MinterSampleTest is Test {
         MinterSample minter = MinterSample(payable(address(minterProxy)));
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(buyers);
 
         // Case: length mismatch
         address[] memory accounts = new address[](1);
