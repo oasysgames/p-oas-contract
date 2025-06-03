@@ -28,6 +28,9 @@ contract MinterSample is OwnableUpgradeable {
     /// @dev Default mint rate in basis points (1 = 0.01%, 100 = 1%, 10000 = 100%)
     uint16 public constant DEFAULT_MINTRATE = 100;
 
+    /// @dev A flag to disable whitelist checks
+    bool public disableWhitelistCheck;
+
     /// @dev List of whitelisted addresses allowed to mint
     address[] public whitelist;
 
@@ -47,6 +50,18 @@ contract MinterSample is OwnableUpgradeable {
     }
 
     /**
+     * @dev MRestricts function access to only whitelisted addresses,
+     * unless whitelist checking is explicitly disabled.
+     */
+    modifier onlyWhitelisted() {
+        require(
+            disableWhitelistCheck || whitelistMap[msg.sender] == true,
+            "Not whitelisted"
+        );
+        _;
+    }
+
+    /**
      * @dev Modifier to ensure the minting amount does not exceed the mint cap.
      * Reverts if the mint cap is exceeded.
      * Update minted amount after the function execution
@@ -61,12 +76,15 @@ contract MinterSample is OwnableUpgradeable {
     /**
      * @dev Initializes the contract by setting the POAS token address
      * @param poasAddress The address of the deployed POAS token contract
+     * @param mintCap_ The maximum amount of tokens that can be minted through this contract
+     * @param disableWhitelistCheck_ A flag to disable whitelist checks
      * @notice This function can only be called once due to the initializer modifier
      */
     function initialize(
         address owner,
         address poasAddress,
-        uint256 mintCap_
+        uint256 mintCap_,
+        bool disableWhitelistCheck_
     ) public virtual initializer {
         _transferOwnership(owner);
         poas = IPOAS(poasAddress);
@@ -74,6 +92,9 @@ contract MinterSample is OwnableUpgradeable {
         // To support proxy, we set mint rate here, avoid directly in code
         //  uint16 public mintRate; <- this will return 0 in proxy
         mintRate = DEFAULT_MINTRATE;
+        disableWhitelistCheck = disableWhitelistCheck_;
+        // Add the owner to the whitelist by default
+        whitelistMap[owner] = true;
     }
 
     /**
@@ -84,7 +105,7 @@ contract MinterSample is OwnableUpgradeable {
      */
     function mint(
         uint256 depositAmount
-    ) public payable virtual hasOperatorRole withinMintCap {
+    ) public payable virtual hasOperatorRole onlyWhitelisted withinMintCap {
         _mint(msg.sender, depositAmount);
     }
 
@@ -98,7 +119,7 @@ contract MinterSample is OwnableUpgradeable {
     function mint(
         address account,
         uint256 depositAmount
-    ) public payable virtual hasOperatorRole withinMintCap {
+    ) public payable virtual hasOperatorRole onlyWhitelisted withinMintCap {
         _mint(account, depositAmount);
     }
 
@@ -112,7 +133,7 @@ contract MinterSample is OwnableUpgradeable {
     function bulkMint(
         address[] calldata accounts,
         uint256[] calldata depositAmounts
-    ) public payable virtual hasOperatorRole withinMintCap {
+    ) public payable virtual hasOperatorRole onlyWhitelisted withinMintCap {
         require(
             accounts.length == depositAmounts.length,
             "Arrays length mismatch"
@@ -121,7 +142,6 @@ contract MinterSample is OwnableUpgradeable {
         uint256 sum = 0;
         for (uint256 i = 0; i < accounts.length; ++i) {
             require(accounts[i] != address(0), "Empty address");
-            require(whitelistMap[accounts[i]] == true, "Not whitelisted");
             require(depositAmounts[i] > 0, "Empty amount");
 
             sum += depositAmounts[i];
@@ -191,6 +211,16 @@ contract MinterSample is OwnableUpgradeable {
     }
 
     /**
+     * @dev Updates the disable whitelist check flag
+     * @param disableWhitelistCheck_ The new value for the disable whitelist check flag
+     */
+    function updateDisableWhitelistCheck(
+        bool disableWhitelistCheck_
+    ) public onlyOwner {
+        disableWhitelistCheck = disableWhitelistCheck_;
+    }
+
+    /**
      * @dev Internal function to calculate the mint amount based on the deposit amount
      * @param amount The amount of OAS to deposit (in wei)
      * @return The calculated mint amount based on the mint rate
@@ -208,7 +238,6 @@ contract MinterSample is OwnableUpgradeable {
      */
     function _mint(address account, uint256 depositAmount) internal virtual {
         require(account != address(0), "Empty address");
-        require(whitelistMap[account] == true, "Not whitelisted");
         require(depositAmount == msg.value, "Amount mismatch");
 
         poas.mint(account, _mintAmount(depositAmount));

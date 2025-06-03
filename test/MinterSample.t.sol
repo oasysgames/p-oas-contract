@@ -53,7 +53,8 @@ contract MinterSampleTest is Test {
     address public owner;
     address public buyer1;
     address public buyer2;
-    address[] public buyers;
+    address public buyer3;
+    address[] public whitelist;
 
     address[] public recipientAddrs;
     string[] public recipientNames;
@@ -75,6 +76,7 @@ contract MinterSampleTest is Test {
         owner = makeAddr("owner");
         buyer1 = makeAddr("buyer1");
         buyer2 = makeAddr("buyer2");
+        buyer3 = makeAddr("buyer3");
 
         // Deploy cntracts
         {
@@ -96,7 +98,8 @@ contract MinterSampleTest is Test {
                     MinterSample.initialize.selector,
                     owner,
                     poasProxy,
-                    minCap
+                    minCap,
+                    false // disableWhitelistCheck
                 )
             );
 
@@ -117,6 +120,7 @@ contract MinterSampleTest is Test {
         vm.deal(poasOperator, 10 ether);
         vm.deal(buyer1, amount * 10);
         vm.deal(buyer2, amount * 10);
+        vm.deal(buyer3, amount * 10);
 
         recipientAddrs.push(address(payment));
         recipientNames.push("name");
@@ -124,8 +128,9 @@ contract MinterSampleTest is Test {
         vm.prank(poasOperator);
         poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
 
-        buyers.push(buyer1);
-        buyers.push(buyer2);
+        whitelist.push(buyer1);
+        whitelist.push(buyer2);
+        whitelist.push(address(payment));
     }
 
     function test_cacheback() public {
@@ -135,7 +140,7 @@ contract MinterSampleTest is Test {
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
         vm.prank(owner);
-        MinterSample(payable(address(minterProxy))).addWhitelist(buyers);
+        MinterSample(payable(address(minterProxy))).addWhitelist(whitelist);
 
         uint256 poasAmount = price - amount;
         uint256 collateralAmount = poasAmount;
@@ -161,7 +166,7 @@ contract MinterSampleTest is Test {
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
         vm.prank(owner);
-        minter.addWhitelist(buyers);
+        minter.addWhitelist(whitelist);
 
         vm.prank(buyer1);
         minter.mint{value: amount}(amount);
@@ -188,11 +193,12 @@ contract MinterSampleTest is Test {
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
         vm.expectRevert("Not whitelisted");
+        vm.prank(buyer1);
         minter.mint{value: amount}(amount);
 
         // Case: Invalid amount
         vm.prank(owner);
-        minter.addWhitelist(buyers);
+        minter.addWhitelist(whitelist);
         vm.expectRevert("Amount mismatch");
         vm.prank(buyer1);
         minter.mint(amount);
@@ -208,12 +214,49 @@ contract MinterSampleTest is Test {
         minter.mint{value: minCap + 1}(minCap + 1);
     }
 
+    function test_mint_disableWhitelistCheck() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        vm.prank(poasAdmin);
+        poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+
+        // fail to mint. before disabling whitelist check
+        vm.expectRevert("Not whitelisted");
+        vm.prank(buyer3);
+        minter.mint{value: amount}(amount);
+
+        // succeed to mint after disabling whitelist check
+        vm.prank(owner);
+        minter.updateDisableWhitelistCheck(true);
+        vm.prank(buyer3);
+        minter.mint{value: amount}(amount);
+        assertEq(poas.balanceOf(buyer3), amount);
+
+        // fail to mint again. after disabling whitelist check
+        vm.prank(owner);
+        minter.addWhitelist(whitelist); // <- buyer3 is not whitelisted
+        vm.prank(owner);
+        minter.updateDisableWhitelistCheck(false);
+        vm.expectRevert("Not whitelisted");
+        vm.prank(buyer3);
+        minter.mint{value: amount}(buyer2, amount);
+
+        // succeed to mint. after adding buyer3 to whitelist
+        address[] memory buyer3Array = new address[](1);
+        buyer3Array[0] = buyer3;
+        vm.prank(owner);
+        minter.addWhitelist(buyer3Array);
+        vm.prank(buyer3);
+        minter.mint{value: amount}(buyer2, amount);
+        assertEq(poas.balanceOf(buyer2), amount);
+        assertEq(address(poas).balance, amount * 2);
+    }
+
     function test_bulkMint() public {
         MinterSample minter = MinterSample(payable(address(minterProxy)));
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
         vm.prank(owner);
-        minter.addWhitelist(buyers);
+        minter.addWhitelist(whitelist);
 
         address[] memory accounts = new address[](2);
         accounts[0] = buyer1;
@@ -234,7 +277,7 @@ contract MinterSampleTest is Test {
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
         vm.prank(owner);
-        minter.addWhitelist(buyers);
+        minter.addWhitelist(whitelist);
 
         // Case: length mismatch
         address[] memory accounts = new address[](1);
@@ -272,7 +315,7 @@ contract MinterSampleTest is Test {
         assertEq(minter.mintRate(), newMinRate);
 
         vm.prank(owner);
-        minter.addWhitelist(buyers);
+        minter.addWhitelist(whitelist);
 
         vm.prank(buyer1);
         minter.mint{value: amount}(amount);
@@ -287,11 +330,11 @@ contract MinterSampleTest is Test {
         // Case: fail to add by invalid owner
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(buyer1);
-        minter.addWhitelist(buyers);
+        minter.addWhitelist(whitelist);
 
         // Case: succeed to adding by owner
         vm.prank(owner);
-        minter.addWhitelist(buyers);
+        minter.addWhitelist(whitelist);
         assertEq(minter.whitelist(0), buyer1);
         assertEq(minter.whitelist(1), buyer2);
         assertEq(minter.whitelistMap(buyer1), true);
@@ -300,16 +343,16 @@ contract MinterSampleTest is Test {
         // Case: Already whitelisted
         vm.expectRevert("Already whitelisted");
         vm.prank(owner);
-        minter.addWhitelist(buyers);
+        minter.addWhitelist(whitelist);
 
         // Case: failed to remove by invalid owner
         vm.expectRevert("Ownable: caller is not the owner");
         vm.prank(buyer1);
-        minter.removeWhitelist(buyers);
+        minter.removeWhitelist(whitelist);
 
         // Case: succeed to removing by owner
         vm.prank(owner);
-        minter.removeWhitelist(buyers);
+        minter.removeWhitelist(whitelist);
         assertEq(minter.whitelistMap(buyer1), false);
         assertEq(minter.whitelistMap(buyer2), false);
         vm.expectRevert();
@@ -318,7 +361,7 @@ contract MinterSampleTest is Test {
         // Case: Not whitelisted
         vm.expectRevert("Not whitelisted");
         vm.prank(owner);
-        minter.removeWhitelist(buyers);
+        minter.removeWhitelist(whitelist);
     }
 
     function test_UpgradeImplementation() public {
@@ -342,6 +385,6 @@ contract MinterSampleTest is Test {
 
         // Make sure the the proxy storage is still intact by trying initialization
         vm.expectRevert("Initializable: contract is already initialized");
-        minter.initialize(owner, address(poas), minCap);
+        minter.initialize(owner, address(poas), minCap, false);
     }
 }
