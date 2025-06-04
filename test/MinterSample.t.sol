@@ -214,6 +214,27 @@ contract MinterSampleTest is Test {
         minter.mint{value: minCap + 1}(minCap + 1);
     }
 
+    function test_mintCap() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        vm.prank(poasAdmin);
+        poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(whitelist);
+
+        uint256 halfCap = minCap / 2;
+
+        vm.prank(buyer1);
+        minter.mint{value: halfCap}(halfCap);
+        vm.prank(buyer1);
+        minter.mint{value: halfCap}(halfCap);
+
+        assertEq(minter.mintedAmount(), minCap);
+
+        vm.expectRevert("Mint cap exceeded");
+        vm.prank(buyer1);
+        minter.mint{value: amount}(amount);
+    }
+
     function test_mint_disableWhitelistCheck() public {
         MinterSample minter = MinterSample(payable(address(minterProxy)));
         vm.prank(poasAdmin);
