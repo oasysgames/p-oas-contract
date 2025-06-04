@@ -59,3 +59,15 @@ Once your environment is configured, run the deployment script:
 ```sh
 npm run deploy
 ```
+
+### Sample Deployment Scripts
+
+Deployment scripts for the example contracts live in the `script/` directory.
+When running these scripts make sure the following environment variables are set:
+
+- `USE_PROXY_ADMIN` – `true` to deploy a `ProxyAdmin` contract, `false` to have the proxy owned directly by `PROXY_OWNER`.
+- `PROXY_OWNER` – Address that becomes the admin of the proxy (or owner of the `ProxyAdmin`).
+- `POAS_ADDRESS` – Address of the deployed POAS contract used by the samples.
+- `EX_CONTRACT` – (PaymentPracticalSample only) External contract address called after a payment.
+- `PAYMENT_PRICE` – (PaymentPracticalSample only) Initial payment price in wei.
+
