@@ -12,7 +12,9 @@ contract ExContract {
     bool public flgErr;
     bool public flgCustomErr;
     bytes public data;
+
     error ExContractError(address buyer, uint256 price, string message);
+
     function onPaid(
         address buyer,
         uint256 price,
@@ -27,9 +29,11 @@ contract ExContract {
         payments[buyer] += price;
         data = data_;
     }
+
     function onFlgErr() external {
         flgErr = true;
     }
+
     function onFlgCustomErr() external {
         flgCustomErr = true;
     }
@@ -63,6 +67,7 @@ contract PaymentPracticalSampleTest is Test {
 
     event PaymentReceived(address indexed from, uint256 amount);
     event Withdrawn(address indexed to, uint256 amount);
+
     error ExContractError(address buyer, uint256 price, string message);
 
     function setUp() public {

@@ -17,3 +17,6 @@ out/
 
 # Ignores development broadcast logs
 /broadcast
+
+# Local
+.local
