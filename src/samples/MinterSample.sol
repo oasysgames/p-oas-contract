@@ -19,13 +19,13 @@ contract MinterSample is OwnableUpgradeable {
     /// @dev Maximum allowable amount of tokens that can be minted through this contract
     uint256 public mintCap;
 
-    /// @dev Maximum allowable amount of tokens that can be minted through this contract
+    /// @dev Tracks the total amount of tokens minted through this contract
     uint256 public mintedAmount;
 
-    /// @dev Mint rate in basis points (1 = 0.01%, 100 = 1%, 10000 = 100%)
+    /// @dev Mint rate expressed as a percentage where 100 means 100%
     uint16 public mintRate;
 
-    /// @dev Default mint rate in basis points (1 = 0.01%, 100 = 1%, 10000 = 100%)
+    /// @dev Default mint rate expressed as a percentage where 100 means 100%
     uint16 public constant DEFAULT_MINTRATE = 100;
 
     /// @dev A flag to disable whitelist checks
@@ -68,7 +68,10 @@ contract MinterSample is OwnableUpgradeable {
      */
     modifier withinMintCap() {
         uint256 mintAmount = _mintAmount(msg.value);
-        require(mintAmount <= mintCap, "Mint cap exceeded");
+        require(
+            mintedAmount + mintAmount <= mintCap,
+            "Mint cap exceeded"
+        );
         _;
         mintedAmount += mintAmount;
     }
@@ -201,7 +204,7 @@ contract MinterSample is OwnableUpgradeable {
 
     /**
      * @dev Updates the mint rate
-     * @param mintRate_ The new mint rate value in basis points (1 = 0.01%, 100 = 1%, 10000 = 100%)
+     * @param mintRate_ The new mint rate value expressed as a percentage where 100 = 100%
      */
     function updateMintRate(uint16 mintRate_) public onlyOwner {
         require(mintRate_ > 0, "Rate must be greater than 0");
