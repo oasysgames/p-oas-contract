@@ -36,6 +36,7 @@ contract POASTest is Test {
     event CollateralWithdrawn(address indexed to, uint256 amount);
     event RecipientAdded(address indexed recipient, string name, string desc);
     event RecipientRemoved(address indexed recipient, string name);
+
     error POASError(string message);
     error POASMintError(string message);
     error POASBurnError(string message);

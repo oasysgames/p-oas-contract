@@ -28,17 +28,12 @@ contract DeployPOAS is Script {
         // If ProxyAdmin is not used, the Proxy Owner and POAS owner must be different
         // Otherwise, all calls from the POAS admin would be intercepted by the Proxy's admin methods
         if (!useProxyAdmin && proxyOwner == deployer) {
-            revert(
-                "ProxyAdmin is not used, so Proxy Owner must be different from POAS Admin"
-            );
+            revert("ProxyAdmin is not used, so Proxy Owner must be different from POAS Admin");
         }
 
         // Deploy the POAS implementation contract
         address implementation = address(new POAS());
-        console.log(
-            "Deployed POAS Implementation: %s",
-            address(implementation)
-        );
+        console.log("Deployed POAS Implementation: %s", address(implementation));
 
         // Deploy the ProxyAdmin
         if (useProxyAdmin) {
@@ -54,9 +49,7 @@ contract DeployPOAS is Script {
 
         // Deploy the TransparentUpgradeableProxy
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            implementation,
-            proxyOwner,
-            abi.encodeWithSelector(POAS.initialize.selector, poasAdmin)
+            implementation, proxyOwner, abi.encodeWithSelector(POAS.initialize.selector, poasAdmin)
         );
         console.log("Deployed POAS Proxy:", address(proxy));
 

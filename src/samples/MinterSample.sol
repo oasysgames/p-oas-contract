@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import {IPOAS} from "../interfaces/IPOAS.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -68,10 +68,7 @@ contract MinterSample is OwnableUpgradeable {
      */
     modifier withinMintCap() {
         uint256 mintAmount = _mintAmount(msg.value);
-        require(
-            mintedAmount + mintAmount <= mintCap,
-            "Mint cap exceeded"
-        );
+        require(mintedAmount + mintAmount <= mintCap, "Mint cap exceeded");
         _;
         mintedAmount += mintAmount;
     }

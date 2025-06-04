@@ -37,17 +37,12 @@ contract DeployPaymentPracticalSample is Script {
         // If ProxyAdmin is not used, the Proxy Owner and PaymentPracticalSample owner must be different
         // Otherwise, all calls from the PaymentPracticalSample admin would be intercepted by the Proxy's admin methods
         if (!useProxyAdmin && proxyOwner == deployer) {
-            revert(
-                "ProxyAdmin is not used, so Proxy Owner must be different from PaymentPracticalSample Admin"
-            );
+            revert("ProxyAdmin is not used, so Proxy Owner must be different from PaymentPracticalSample Admin");
         }
 
         // Deploy the PaymentPracticalSample implementation contract
         address implementation = address(new PaymentPracticalSample());
-        console.log(
-            "Deployed PaymentPracticalSample Implementation: %s",
-            address(implementation)
-        );
+        console.log("Deployed PaymentPracticalSample Implementation: %s", address(implementation));
 
         // Deploy the ProxyAdmin
         if (useProxyAdmin) {
