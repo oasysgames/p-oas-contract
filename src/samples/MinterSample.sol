@@ -56,7 +56,7 @@ contract MinterSample is OwnableUpgradeable {
     modifier onlyWhitelisted() {
         require(
             disableWhitelistCheck || whitelistWithAllowanceMap[msg.sender] > 0,
-            "Not whitelisted"
+            "Not whitelisted or no allowance"
         );
         _;
     }
@@ -68,7 +68,10 @@ contract MinterSample is OwnableUpgradeable {
      */
     modifier withinMintCap() {
         uint256 mintAmount = _mintAmount(msg.value);
-        require(mintedAmount + mintAmount <= mintCap, "Mint cap exceeded");
+        require(
+            mintedAmount + mintAmount <= mintCap,
+            "Total mint cap exceeded"
+        );
         if (!disableWhitelistCheck) {
             require(
                 whitelistWithAllowanceMap[msg.sender] >= mintAmount,
@@ -193,7 +196,7 @@ contract MinterSample is OwnableUpgradeable {
             require(accounts[i] != address(0), "Empty address");
             require(
                 whitelistWithAllowanceMap[accounts[i]] != 0,
-                "Not whitelisted"
+                "Not whitelisted or no allowance"
             );
 
             for (uint256 j = 0; j < whitelist.length; ++j) {

@@ -199,7 +199,7 @@ contract MinterSampleTest is Test {
         // Case: not whitelisted
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
-        vm.expectRevert("Not whitelisted");
+        vm.expectRevert("Not whitelisted or no allowance");
         vm.prank(buyer1);
         minter.mint{value: amount}(amount);
 
@@ -216,26 +216,27 @@ contract MinterSampleTest is Test {
         minter.mint{value: amount}(address(0), amount);
 
         // Case: over max cap
-        vm.expectRevert("Mint cap exceeded");
+        vm.expectRevert("Total mint cap exceeded");
         vm.prank(buyer1);
         minter.mint{value: minCap + 1}(minCap + 1);
     }
 
     function test_mintCap() public {
         MinterSample minter = MinterSample(payable(address(minterProxy)));
+        address[] memory _whitelist = new address[](1);
+        _whitelist[0] = buyer1;
+        uint256[] memory _whitelistCaps = new uint256[](1);
+        uint256 halfCap = minCap / 2;
+        _whitelistCaps[0] = halfCap;
         vm.prank(poasAdmin);
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
         vm.prank(owner);
-        minter.addWhitelist(whitelist, whitelistCaps);
-
-        uint256 halfCap = minCap / 2;
+        minter.addWhitelist(_whitelist, _whitelistCaps);
 
         vm.prank(buyer1);
-        minter.mint{value: halfCap}(halfCap);
-        vm.prank(buyer1);
-        minter.mint{value: halfCap}(halfCap);
+        minter.mint{value: halfCap - 1}(halfCap - 1);
 
-        assertEq(minter.mintedAmount(), minCap);
+        assertEq(minter.mintedAmount(), halfCap - 1);
 
         vm.expectRevert("Mint cap exceeded");
         vm.prank(buyer1);
@@ -248,7 +249,7 @@ contract MinterSampleTest is Test {
         poas.grantRole(OPERATOR_ROLE, address(minterProxy));
 
         // fail to mint. before disabling whitelist check
-        vm.expectRevert("Not whitelisted");
+        vm.expectRevert("Not whitelisted or no allowance");
         vm.prank(buyer3);
         minter.mint{value: amount}(amount);
 
@@ -264,7 +265,7 @@ contract MinterSampleTest is Test {
         minter.addWhitelist(whitelist, whitelistCaps); // <- buyer3 is not whitelisted
         vm.prank(owner);
         minter.updateDisableWhitelistCheck(false);
-        vm.expectRevert("Not whitelisted");
+        vm.expectRevert("Not whitelisted or no allowance");
         vm.prank(buyer3);
         minter.mint{value: amount}(buyer2, amount);
 
@@ -390,7 +391,7 @@ contract MinterSampleTest is Test {
         minter.whitelist(0);
 
         // Case: Not whitelisted
-        vm.expectRevert("Not whitelisted");
+        vm.expectRevert("Not whitelisted or no allowance");
         vm.prank(owner);
         minter.removeWhitelist(whitelist);
     }
