@@ -34,8 +34,8 @@ contract MinterSample is OwnableUpgradeable {
     /// @dev List of whitelisted addresses allowed to mint
     address[] public whitelist;
 
-    /// @dev Mapping for quick whitelist status verification
-    mapping(address => bool) public whitelistMap;
+    /// @dev Mapping for each whitelisted address to its remaining mint allowance
+    mapping(address => uint256) public whitelistWithAllowanceMap;
 
     /**
      * @dev Modifier to ensure the contract has the OPERATOR_ROLE in the POAS contract.
@@ -55,7 +55,7 @@ contract MinterSample is OwnableUpgradeable {
      */
     modifier onlyWhitelisted() {
         require(
-            disableWhitelistCheck || whitelistMap[msg.sender] == true,
+            disableWhitelistCheck || whitelistWithAllowanceMap[msg.sender] > 0,
             "Not whitelisted"
         );
         _;
@@ -69,8 +69,17 @@ contract MinterSample is OwnableUpgradeable {
     modifier withinMintCap() {
         uint256 mintAmount = _mintAmount(msg.value);
         require(mintedAmount + mintAmount <= mintCap, "Mint cap exceeded");
+        if (!disableWhitelistCheck) {
+            require(
+                whitelistWithAllowanceMap[msg.sender] >= mintAmount,
+                "Mint cap exceeded"
+            );
+        }
         _;
         mintedAmount += mintAmount;
+        if (!disableWhitelistCheck) {
+            whitelistWithAllowanceMap[msg.sender] -= mintAmount;
+        }
     }
 
     /**
@@ -93,8 +102,8 @@ contract MinterSample is OwnableUpgradeable {
         //  uint16 public mintRate; <- this will return 0 in proxy
         mintRate = DEFAULT_MINTRATE;
         disableWhitelistCheck = disableWhitelistCheck_;
-        // Add the owner to the whitelist by default
-        whitelistMap[owner] = true;
+        // Add the owner to the whitelist by default with full allowance
+        whitelistWithAllowanceMap[owner] = mintCap_;
     }
 
     /**
@@ -157,14 +166,20 @@ contract MinterSample is OwnableUpgradeable {
      * @dev Adds multiple addresses to the whitelist
      * @param accounts Array of addresses to be added to the whitelist
      */
-    function addWhitelist(address[] calldata accounts) public onlyOwner {
+    function addWhitelist(
+        address[] calldata accounts,
+        uint256[] calldata caps
+    ) public onlyOwner {
         require(accounts.length > 0, "Empty array");
+        require(accounts.length == caps.length, "Arrays length mismatch");
         for (uint256 i = 0; i < accounts.length; ++i) {
             require(accounts[i] != address(0), "Empty address");
-            require(whitelistMap[accounts[i]] == false, "Already whitelisted");
 
-            whitelist.push(accounts[i]);
-            whitelistMap[accounts[i]] = true;
+            if (whitelistWithAllowanceMap[accounts[i]] == 0) {
+                whitelist.push(accounts[i]);
+            }
+
+            whitelistWithAllowanceMap[accounts[i]] += caps[i];
         }
     }
 
@@ -176,7 +191,10 @@ contract MinterSample is OwnableUpgradeable {
         require(accounts.length > 0, "Empty array");
         for (uint256 i = 0; i < accounts.length; ++i) {
             require(accounts[i] != address(0), "Empty address");
-            require(whitelistMap[accounts[i]] == true, "Not whitelisted");
+            require(
+                whitelistWithAllowanceMap[accounts[i]] != 0,
+                "Not whitelisted"
+            );
 
             for (uint256 j = 0; j < whitelist.length; ++j) {
                 if (whitelist[j] == accounts[i]) {
@@ -186,7 +204,7 @@ contract MinterSample is OwnableUpgradeable {
                 }
             }
 
-            delete whitelistMap[accounts[i]];
+            delete whitelistWithAllowanceMap[accounts[i]];
         }
     }
 
