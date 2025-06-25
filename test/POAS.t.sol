@@ -926,17 +926,94 @@ contract POASTest is Test {
     }
 
     /**
-     * @dev Test that the transfer function is disabled
+     * @dev Test payment processing with transfer function
      */
     function test_transfer() public {
+        // Add Recipients
+        vm.prank(operator);
+        poas.addRecipients(recipientAddrs, recipientNames, recipientDescs);
+
+        // Add collateral
+        vm.prank(operator);
+        poas.depositCollateral{value: 100}();
+
+        // Mint tokens
+        vm.prank(operator);
+        poas.mint(holder, 100);
+
+        // Address that will perform payment
+        address payOperator = makeAddr("payOperator");
+
+        // Approve payOperator
+        vm.prank(holder);
+        poas.approve(payOperator, type(uint256).max);
+
+        // Execute payment
+        vm.expectEmit();
+        emit Paid(holder, recipient1, 50);
+
+        vm.prank(holder);
+        poas.transfer(recipient1, 50);
+
+        // Token balance of the payer is burned
+        assertEq(poas.balanceOf(holder), 50);
+        assertEq(poas.totalSupply(), 50);
+        assertEq(poas.totalBurned(), 50);
+
+        // The recipient doesn't receive tokens
+        assertEq(poas.balanceOf(recipient1), 0);
+
+        // The recipient receives OAS
+        assertEq(address(poas).balance, 50);
+        assertEq(recipient1.balance, 50);
+
+        // Non-existent recipient
         vm.expectRevert(
             abi.encodeWithSelector(
                 POASPaymentError.selector,
-                "cannot pay with transfer"
+                "recipient not found"
+            )
+        );
+        vm.prank(payOperator);
+        poas.transfer(makeAddr("nonexistent"), 1);
+
+        // Zero amount
+        vm.expectRevert(
+            abi.encodeWithSelector(POASPaymentError.selector, "amount is zero")
+        );
+        vm.prank(holder);
+        poas.transfer(recipient1, 0);
+
+        // Insufficient collateral
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                POASPaymentError.selector,
+                "insufficient collateral"
             )
         );
         vm.prank(holder);
-        poas.transfer(recipient1, 1);
+        poas.transfer(recipient1, 51);
+
+        // Recipient contract doesn't implement receive function
+        address[] memory additionalRecipientAddrs = new address[](1);
+        string[] memory additionalRecipientNames = new string[](1);
+        additionalRecipientAddrs[0] = address(this);
+        additionalRecipientNames[0] = "this";
+        vm.prank(operator);
+        poas.addRecipients(
+            additionalRecipientAddrs,
+            additionalRecipientNames,
+            additionalRecipientNames
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                POASPaymentError.selector,
+                "transfer failed to recipient"
+            )
+        );
+        vm.prank(holder);
+        poas.transfer(additionalRecipientAddrs[0], 1);
     }
 
     /**
