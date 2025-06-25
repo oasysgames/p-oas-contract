@@ -1,7 +1,7 @@
 {
   "name": "p-oas-contract",
   "description": "Collateral-backed point OAS token contract on the OAS chain.",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "license": "MIT",
   "scripts": {
     "compile": "forge build",
