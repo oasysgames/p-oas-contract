@@ -152,6 +152,14 @@ interface IPOAS is IAccessControlEnumerableUpgradeable, IERC20Upgradeable {
 
     /**
      * @dev Make a payment
+     *      Overrides `ERC20.transfer`
+     * @param to The recipient address
+     * @param amount The amount to pay
+     */
+    function transfer(address to, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Make a payment
      *      Overrides `ERC20.transferFrom`
      * @param from The payer
      * @param recipient The payment recipient

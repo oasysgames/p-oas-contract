@@ -160,15 +160,18 @@ contract POAS is
      * @inheritdoc IERC20Upgradeable
      */
     function transfer(
-        address,
-        uint256
+        address recipient,
+        uint256 amount
     )
         public
         virtual
-        override(ERC20Upgradeable, IERC20Upgradeable)
+        override(ERC20Upgradeable, IPOAS)
+        nonReentrant
         returns (bool)
     {
-        revert POASPaymentError("cannot pay with transfer");
+        _pay(msg.sender, recipient, amount);
+        _burn(msg.sender, amount);
+        return true;
     }
 
     /**
@@ -188,26 +191,13 @@ contract POAS is
         if (from == msg.sender) {
             revert POASPaymentError("cannot pay from self");
         }
-        if (!hasRole(RECIPIENT_ROLE, recipient)) {
-            revert POASPaymentError("recipient not found");
-        }
-        if (amount == 0) {
-            revert POASPaymentError("amount is zero");
-        }
-        if (amount > address(this).balance) {
-            revert POASPaymentError("insufficient collateral");
-        }
+
+        _pay(from, recipient, amount);
 
         // The sender must have been previously approved by 'from'.
         // The sender doesn't need to have RECIPIENT_ROLE, providing flexibility for the app side.
         burnFrom(from, amount);
 
-        (bool success, ) = recipient.call{value: amount}("");
-        if (!success) {
-            revert POASPaymentError("transfer failed to recipient");
-        }
-
-        emit Paid(from, recipient, amount);
         return true;
     }
 
@@ -469,6 +459,35 @@ contract POAS is
         super._burn(account, amount);
         _totalBurned += amount;
         emit Burned(account, amount);
+    }
+
+    /**
+     * @dev Internal function to make a payment.
+     * @param from The address that will pay the amount
+     * @param recipient The address that will receive the payment
+     * @param amount The amount to pay
+     */
+    function _pay(
+        address from,
+        address recipient,
+        uint256 amount
+    ) internal virtual {
+        if (!hasRole(RECIPIENT_ROLE, recipient)) {
+            revert POASPaymentError("recipient not found");
+        }
+        if (amount == 0) {
+            revert POASPaymentError("amount is zero");
+        }
+        if (amount > address(this).balance) {
+            revert POASPaymentError("insufficient collateral");
+        }
+
+        (bool success, ) = recipient.call{value: amount}("");
+        if (!success) {
+            revert POASPaymentError("transfer failed to recipient");
+        }
+
+        emit Paid(from, recipient, amount);
     }
 
     /**
