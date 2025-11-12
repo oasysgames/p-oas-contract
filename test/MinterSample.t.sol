@@ -188,6 +188,28 @@ contract MinterSampleTest is Test {
         assertEq(address(poas).balance, amount * 2);
     }
 
+    function test_mint_free() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        vm.prank(poasAdmin);
+        poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(whitelist, whitelistCaps);
+        vm.prank(owner);
+        minter.updateMintRate(0);
+        vm.prank(buyer1);
+
+        uint256 freeMintAmount = 1 ether;
+        minter.mint{value: 0}(buyer1, freeMintAmount);
+
+        assertEq(poas.balanceOf(buyer1), freeMintAmount);
+        assertEq(address(poas).balance, 0);
+        assertEq(minter.mintedAmount(), freeMintAmount);
+        assertEq(
+            minter.whitelistWithAllowanceMap(buyer1),
+            minCap - freeMintAmount
+        );
+    }
+
     function test_mint_reverts() public {
         MinterSample minter = MinterSample(payable(address(minterProxy)));
 

@@ -23,6 +23,7 @@ contract MinterSample is OwnableUpgradeable {
     uint256 public mintedAmount;
 
     /// @dev Mint rate expressed as a percentage where 100 means 100%
+    /// @dev Allow free minting by setting rate to 0
     uint16 public mintRate;
 
     /// @dev Default mint rate expressed as a percentage where 100 means 100%
@@ -225,7 +226,8 @@ contract MinterSample is OwnableUpgradeable {
      * @param mintRate_ The new mint rate value expressed as a percentage where 100 = 100%
      */
     function updateMintRate(uint16 mintRate_) public onlyOwner {
-        require(mintRate_ > 0, "Rate must be greater than 0");
+        // Allow free minting by setting rate to 0
+        // require(mintRate_ > 0, "Rate must be greater than 0");
         require(mintRate_ < 10000, "Rate must be less than 10000");
 
         mintRate = mintRate_;
@@ -259,6 +261,26 @@ contract MinterSample is OwnableUpgradeable {
      */
     function _mint(address account, uint256 depositAmount) internal virtual {
         require(account != address(0), "Empty address");
+        if (mintRate == 0) {
+            uint256 mintAmount = depositAmount;
+            require(
+                mintedAmount + mintAmount <= mintCap,
+                "Total mint cap exceeded"
+            );
+            if (!disableWhitelistCheck) {
+                require(
+                    whitelistWithAllowanceMap[msg.sender] >= mintAmount,
+                    "Mint cap exceeded"
+                );
+            }
+            poas.mint(account, mintAmount);
+            mintedAmount += mintAmount;
+            if (!disableWhitelistCheck) {
+                whitelistWithAllowanceMap[msg.sender] -= mintAmount;
+            }
+            return;
+        }
+
         require(depositAmount == msg.value, "Amount mismatch");
 
         poas.mint(account, _mintAmount(depositAmount));
