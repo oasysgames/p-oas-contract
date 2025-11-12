@@ -86,6 +86,17 @@ contract MinterSample is OwnableUpgradeable {
         }
     }
 
+    function OPERATOR_ROLE() external pure returns (bytes32) {
+        return keccak256("OPERATOR_ROLE");
+    }
+
+    function hasRole(
+        bytes32 /* role */,
+        address /* account */
+    ) external pure returns (bool) {
+        return true;
+    }
+
     /**
      * @dev Initializes the contract by setting the POAS token address
      * @param poasAddress The address of the deployed POAS token contract
