@@ -350,6 +350,17 @@ contract MinterSample is OwnableUpgradeable {
     }
 
     /**
+     * @dev Returns the remaining whitelist allowance for a given account
+     * @param account The address to get the whitelist allowance for
+     * @return The whitelist allowance for the given account
+     */
+    function getWhitelistAllowance(
+        address account
+    ) public view virtual returns (uint256) {
+        return whitelistWithAllowanceMap[account];
+    }
+
+    /**
      * @dev Internal function to check if the mint amount is within the mint cap
      * @param mintAmount The amount of tokens to mint
      * @notice Checks if the total mint amount is within the mint cap
