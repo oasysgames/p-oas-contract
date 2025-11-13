@@ -342,7 +342,7 @@ contract MinterSample is OwnableUpgradeable {
     }
 
     /**
-     * @dev Internal function to check if the mint is free
+     * @dev Public view function to check if the mint is free
      * @return True if the mint is free, false otherwise
      */
     function isFreeMint() public view virtual returns (bool) {
