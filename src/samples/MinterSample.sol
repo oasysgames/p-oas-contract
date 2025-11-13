@@ -217,6 +217,15 @@ contract MinterSample is OwnableUpgradeable {
         _deposit();
     }
 
+    /**
+     * @dev Mints POAS tokens for multiple accounts in a single transaction (free mint)
+     * @param accounts Array of addresses that will receive the minted tokens
+     * @param mintAmounts Array of token amounts to mint for each corresponding address
+     * @notice Only callable when mintRate is set to free (0)
+     * @notice Contract must have OPERATOR_ROLE to execute this function
+     * @notice The total minted amount must not exceed the mint cap
+     * @notice Arrays must have the same length and contain valid addresses and amounts
+     */
     function bulkFreeMint(
         address[] calldata accounts,
         uint256[] calldata mintAmounts
