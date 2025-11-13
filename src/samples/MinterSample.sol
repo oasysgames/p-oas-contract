@@ -153,7 +153,6 @@ contract MinterSample is OwnableUpgradeable {
     /**
      * @dev Free mints POAS tokens for the caller
      * @param mintAmount The amount of tokens to mint
-     * @notice The caller must send exactly the OAS amount that matches the token amount
      * @notice Contract must have OPERATOR_ROLE to execute this function
      * @notice Restricted to free mint
      */
@@ -167,7 +166,6 @@ contract MinterSample is OwnableUpgradeable {
      * @dev Free mints POAS tokens for a specified account
      * @param account The address that will receive the minted tokens
      * @param mintAmount The amount of tokens to mint
-     * @notice The caller must send exactly the OAS amount that matches the token amount
      * @notice Contract must have OPERATOR_ROLE to execute this function
      * @notice Restricted to free mint
      */
