@@ -219,6 +219,13 @@ contract MinterSampleTest is Test {
         vm.expectRevert("Total mint cap exceeded");
         vm.prank(buyer1);
         minter.mint{value: minCap + 1}(minCap + 1);
+
+        // Case: free mint
+        vm.prank(owner);
+        minter.updateMintRate(0);
+        vm.expectRevert("restricted to non-free mint");
+        vm.prank(buyer1);
+        minter.mint{value: 0}(amount);
     }
 
     function test_mintCap() public {
@@ -327,6 +334,153 @@ contract MinterSampleTest is Test {
         vm.expectRevert("Sum of amounts mismatch value");
         vm.prank(buyer1);
         minter.bulkMint{value: amount * 2}(accounts2, amounts);
+
+        // Case: free mint
+        vm.prank(owner);
+        minter.updateMintRate(0);
+        vm.expectRevert("restricted to non-free mint");
+        vm.prank(buyer1);
+        minter.bulkMint{value: 0}(accounts2, amounts);
+    }
+
+    function test_freeMint() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        vm.prank(poasAdmin);
+        poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(whitelist, whitelistCaps);
+        vm.prank(owner);
+        minter.updateMintRate(0);
+
+        // Case: freeMint(amount)
+        vm.prank(buyer1);
+        minter.freeMint(amount);
+        assertEq(poas.balanceOf(buyer1), amount);
+        assertEq(address(poas).balance, 0);
+        assertEq(minter.mintedAmount(), amount);
+        assertEq(minter.whitelistWithAllowanceMap(buyer1), minCap - amount);
+
+        // Case: freeMint(account, amount)
+        vm.prank(buyer2);
+        minter.freeMint(buyer2, amount);
+        assertEq(poas.balanceOf(buyer2), amount);
+        assertEq(address(poas).balance, 0);
+        assertEq(minter.mintedAmount(), amount * 2);
+        assertEq(minter.whitelistWithAllowanceMap(buyer2), minCap - amount);
+    }
+
+    function test_freeMint_revert() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        address[] memory _whitelist = new address[](2);
+        _whitelist[0] = buyer1;
+        _whitelist[1] = buyer2;
+        uint256[] memory _whitelistCaps = new uint256[](2);
+        _whitelistCaps[0] = minCap / 2;
+        _whitelistCaps[1] = minCap + 1;
+        vm.prank(poasAdmin);
+        poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(_whitelist, _whitelistCaps);
+        vm.prank(owner);
+        minter.updateMintRate(0);
+
+        // Case: empty address
+        vm.expectRevert("Empty address");
+        vm.prank(buyer1);
+        minter.freeMint(address(0), amount);
+
+        // Case: empty amount
+        vm.expectRevert("Empty amount");
+        vm.prank(buyer1);
+        minter.freeMint(buyer1, 0);
+
+        // Case: individual mint cap exceeded
+        vm.expectRevert("Mint cap exceeded");
+        vm.prank(buyer1);
+        minter.freeMint(_whitelistCaps[0] + 1);
+
+        // Case: total mint cap exceeded
+        vm.expectRevert("Total mint cap exceeded");
+        vm.prank(buyer2);
+        minter.freeMint(_whitelistCaps[1]);
+
+        // Case: non-free mint
+        vm.prank(owner);
+        minter.updateMintRate(100);
+        vm.expectRevert("restricted to free mint");
+        vm.prank(buyer1);
+        minter.freeMint(amount);
+    }
+
+    function test_bulkFreeMint() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        vm.prank(poasAdmin);
+        poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(whitelist, whitelistCaps);
+        vm.prank(owner);
+        minter.updateMintRate(0);
+
+        address[] memory accounts = new address[](2);
+        accounts[0] = buyer1;
+        accounts[1] = buyer2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = amount;
+        amounts[1] = amount * 2;
+        vm.prank(buyer1);
+        minter.bulkFreeMint(accounts, amounts);
+        assertEq(poas.balanceOf(buyer1), amount);
+        assertEq(poas.balanceOf(buyer2), amount * 2);
+        assertEq(address(poas).balance, 0);
+        assertEq(minter.mintedAmount(), amount + amount * 2);
+        assertEq(
+            minter.whitelistWithAllowanceMap(buyer1),
+            minCap - amount - amount * 2
+        );
+    }
+
+    function test_bulkFreeMint_revert() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        address[] memory _whitelist = new address[](2);
+        _whitelist[0] = buyer1;
+        _whitelist[1] = buyer2;
+        uint256[] memory _whitelistCaps = new uint256[](2);
+        uint256 halfCap = minCap / 2;
+        _whitelistCaps[0] = halfCap + 1;
+        _whitelistCaps[1] = halfCap + 1;
+        vm.prank(poasAdmin);
+        poas.grantRole(OPERATOR_ROLE, address(minterProxy));
+        vm.prank(owner);
+        minter.addWhitelist(_whitelist, _whitelistCaps);
+        vm.prank(owner);
+        minter.updateMintRate(0);
+
+        // Case: length mismatch
+        address[] memory accounts = new address[](1);
+        accounts[0] = buyer1;
+        vm.expectRevert("Arrays length mismatch");
+        vm.prank(buyer1);
+        minter.bulkFreeMint(accounts, _whitelistCaps);
+
+        // Case: individual mint cap exceeded
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = _whitelistCaps[0] / 2;
+        amounts[1] = _whitelistCaps[1] + 1;
+        vm.expectRevert("Mint cap exceeded");
+        vm.prank(buyer1);
+        minter.bulkFreeMint(_whitelist, amounts);
+
+        // Case: total mint cap exceeded
+        vm.expectRevert("Total mint cap exceeded");
+        vm.prank(buyer1);
+        minter.bulkFreeMint(_whitelist, _whitelistCaps);
+
+        // Case: non-free mint
+        vm.prank(owner);
+        minter.updateMintRate(100);
+        vm.expectRevert("restricted to free mint");
+        vm.prank(buyer1);
+        minter.bulkFreeMint(_whitelist, _whitelistCaps);
     }
 
     function test_mintrate() public {
@@ -394,6 +548,66 @@ contract MinterSampleTest is Test {
         vm.expectRevert("Not whitelisted or no allowance");
         vm.prank(owner);
         minter.removeWhitelist(whitelist);
+    }
+
+    function test_calculateMintAmount() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+
+        // Case mint rate is 100%
+        vm.prank(owner);
+        minter.updateMintRate(100);
+        assertEq(minter.calculateMintAmount(amount), amount);
+
+        // Case mint rate is 200%
+        vm.prank(owner);
+        minter.updateMintRate(200);
+        assertEq(minter.calculateMintAmount(amount), amount * 2);
+
+        // Case mint rate is 50%
+        vm.prank(owner);
+        minter.updateMintRate(50);
+        assertEq(minter.calculateMintAmount(amount), amount / 2);
+
+        // Case free mint
+        vm.prank(owner);
+        minter.updateMintRate(0);
+        vm.expectRevert("No deposit needed for free mint");
+        minter.calculateMintAmount(amount);
+    }
+
+    function test_calculateDepositAmount() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+
+        // Case mint rate is 100%
+        vm.prank(owner);
+        minter.updateMintRate(100);
+        assertEq(minter.calculateDepositAmount(amount), amount);
+
+        // Case mint rate is 200%
+        vm.prank(owner);
+        minter.updateMintRate(200);
+        assertEq(minter.calculateDepositAmount(amount), amount / 2);
+
+        // Case mint rate is 50%
+        vm.prank(owner);
+        minter.updateMintRate(50);
+        assertEq(minter.calculateDepositAmount(amount), amount * 2);
+
+        // Case free mint
+        vm.prank(owner);
+        minter.updateMintRate(0);
+        assertEq(minter.calculateDepositAmount(amount), 0);
+    }
+
+    function test_isFreeMint() public {
+        MinterSample minter = MinterSample(payable(address(minterProxy)));
+        // Case non-free mint
+        assertEq(minter.isFreeMint(), false);
+
+        // Case free mint
+        vm.prank(owner);
+        minter.updateMintRate(0);
+        assertEq(minter.isFreeMint(), true);
     }
 
     function test_UpgradeImplementation() public {
