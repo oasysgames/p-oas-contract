@@ -317,9 +317,11 @@ contract MinterSample is OwnableUpgradeable {
     }
 
     /**
-     * @dev Calculate the mint amount based on the deposit amount
+     * @dev Calculates the mint amount based on the deposit amount.
+     *      Only applicable when not in free mint mode; reverts if called during free mint mode.
      * @param depositAmount The amount of OAS to deposit (in wei)
      * @return The calculated mint amount based on the mint rate
+     * @notice This function is only meant for non-free mint scenarios. It will revert if the contract is in free mint mode.
      */
     function calculateMintAmount(
         uint256 depositAmount
