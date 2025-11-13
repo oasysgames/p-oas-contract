@@ -23,9 +23,7 @@ contract MinterSample is OwnableUpgradeable {
     /// @dev Tracks the total amount of tokens minted through this contract
     uint256 public mintedAmount;
 
-    /// @dev Mint rate expressed as a percentage where 100 means 100%
-    /// @dev between 0 and 10000
-    /// @dev 0 means free mint
+    /// @dev Mint rate expressed as a percentage where 100 means 100% (range: 0-9999, where 0 means free mint)
     uint16 public mintRate;
 
     /// @dev Default mint rate expressed as a percentage where 100 means 100%
